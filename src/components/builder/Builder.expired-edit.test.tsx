@@ -44,6 +44,7 @@ const editConfig: Config = {
 function baseCart(overrides: Partial<CartResponse['lines'][0]>): CartResponse {
   return {
     serverTime: new Date().toISOString(),
+    version: 1,
     lines: [
       {
         id: 'line-edit-1',

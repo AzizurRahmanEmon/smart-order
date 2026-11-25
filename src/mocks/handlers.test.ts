@@ -5,7 +5,11 @@ import menuFixture from '@/mocks/fixtures/menu.json'
 import type { Config, Menu } from '@/types/menu'
 
 import { handlers } from './handlers'
-import { buildConfig as buildConfigHelper } from './testHelpers'
+import {
+  buildConfig as buildConfigHelper,
+  cartIfMatchHeaders,
+  cartPostHeaders,
+} from './testHelpers'
 import { getCatalogStock, resetMockServerState } from './serverState'
 
 const server = setupServer(...handlers)
@@ -35,21 +39,19 @@ describe('cart handlers', () => {
       sausage: 1,
     })
     const key = 'same-key-123'
-    const headers = {
-      'Content-Type': 'application/json',
-      'Idempotency-Key': key,
-    }
+    const headers1 = await cartPostHeaders(key)
 
     const r1 = await fetch('/api/cart', {
       method: 'POST',
-      headers,
+      headers: headers1,
       body: JSON.stringify({ config, qty: 1 }),
     })
     expect(r1.status).toBe(201)
 
+    const headers2 = await cartPostHeaders(key)
     const r2 = await fetch('/api/cart', {
       method: 'POST',
-      headers,
+      headers: headers2,
       body: JSON.stringify({ config, qty: 1 }),
     })
     expect(r2.status).toBe(201)
@@ -67,11 +69,9 @@ describe('cart handlers', () => {
     })
     const res = await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'fail-key',
+      headers: await cartPostHeaders('fail-key', {
         'X-Mock-Fail': 'reserve',
-      },
+      }),
       body: JSON.stringify({ config, qty: 1 }),
     })
     expect(res.status).toBe(500)
@@ -92,10 +92,7 @@ describe('cart handlers', () => {
     })
     await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'b-key',
-      },
+      headers: await cartPostHeaders('b-key'),
       body: JSON.stringify({ config: configB, qty: 1 }),
     })
 
@@ -111,10 +108,7 @@ describe('cart handlers', () => {
     for (let i = 0; i < 2; i++) {
       await fetch('/api/cart', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': `c-${i}`,
-        },
+        headers: await cartPostHeaders(`c-${i}`),
         body: JSON.stringify({ config: configC, qty: 1 }),
       })
     }
@@ -122,10 +116,7 @@ describe('cart handlers', () => {
     const greedy = buildConfig({ toast: 1, sausage: 1, fried: 2 })
     const res = await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'egg-fail',
-      },
+      headers: await cartPostHeaders('egg-fail'),
       body: JSON.stringify({ config: greedy, qty: 1 }),
     })
     expect(res.status).toBe(409)
@@ -140,10 +131,7 @@ describe('cart handlers', () => {
     })
     const add = await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'edit-test',
-      },
+      headers: await cartPostHeaders('edit-test'),
       body: JSON.stringify({ config, qty: 1 }),
     }).then((r) => r.json())
 
@@ -157,7 +145,9 @@ describe('cart handlers', () => {
     })
     const updated = await fetch(`/api/cart/${add.lineId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await cartIfMatchHeaders({
+        'Content-Type': 'application/json',
+      }),
       body: JSON.stringify({ config: newConfig, qty: 1 }),
     }).then((r) => r.json())
 
@@ -177,10 +167,7 @@ describe('cart handlers', () => {
     })
     await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'expiry',
-      },
+      headers: await cartPostHeaders('expiry'),
       body: JSON.stringify({ config, qty: 1 }),
     })
 
@@ -208,16 +195,16 @@ describe('server stock model', () => {
     })
     const add = await fetch('/api/cart', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': 'stock-test',
-      },
+      headers: await cartPostHeaders('stock-test'),
       body: JSON.stringify({ config, qty: 1 }),
     }).then((r) => r.json())
 
     expect(getCatalogStock().egg).toBe(catalogBefore)
 
-    await fetch(`/api/cart/${add.lineId}`, { method: 'DELETE' })
+    await fetch(`/api/cart/${add.lineId}`, {
+      method: 'DELETE',
+      headers: await cartIfMatchHeaders(),
+    })
     expect(getCatalogStock().egg).toBe(catalogBefore)
   })
 })

@@ -19,6 +19,7 @@ import {
   getServerNowMs,
   getServerTimeIso,
   getStockMenu,
+  matchCartVersion,
   removeCartLine,
   reservedAll,
   setIdempotency,
@@ -78,6 +79,11 @@ export const handlers = [
       })
     }
 
+    const versionErr = matchCartVersion(request.headers.get('If-Match'))
+    if (versionErr) {
+      return jsonError(409, versionErr)
+    }
+
     if (request.headers.get('X-Mock-Fail') === 'reserve') {
       return jsonError(500, {
         code: 'reserve_failed',
@@ -118,6 +124,10 @@ export const handlers = [
 
   http.put('/api/cart/:lineId', async ({ params, request }) => {
     await delay()
+    const versionErr = matchCartVersion(request.headers.get('If-Match'))
+    if (versionErr) {
+      return jsonError(409, versionErr)
+    }
     const lineId = params.lineId as string
     const line = getLine(lineId)
     if (!line) {
@@ -165,8 +175,12 @@ export const handlers = [
     return HttpResponse.json(buildCartResponse())
   }),
 
-  http.delete('/api/cart/:lineId', async ({ params }) => {
+  http.delete('/api/cart/:lineId', async ({ params, request }) => {
     await delay()
+    const versionErr = matchCartVersion(request.headers.get('If-Match'))
+    if (versionErr) {
+      return jsonError(409, versionErr)
+    }
     const lineId = params.lineId as string
     if (!removeCartLine(lineId)) {
       return jsonError(404, { code: 'not_found', message: 'Cart line not found' })
@@ -231,6 +245,11 @@ export const handlers = [
       return HttpResponse.json(cached.body as Record<string, unknown>, {
         status: cached.status,
       })
+    }
+
+    const versionErr = matchCartVersion(request.headers.get('If-Match'))
+    if (versionErr) {
+      return jsonError(409, versionErr)
     }
 
     const body = (await request.json()) as {

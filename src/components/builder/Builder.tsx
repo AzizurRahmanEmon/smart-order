@@ -107,6 +107,9 @@ export function Builder() {
             setEditingLineId(null)
           },
           onError: (err) => {
+            if (err instanceof ApiError && err.body.code === 'cart_conflict') {
+              return
+            }
             const message =
               err instanceof ApiError ? err.body.message : 'Update failed'
             toast.error(message)
@@ -130,6 +133,9 @@ export function Builder() {
           resetBuilderConfig()
         },
         onError: (err) => {
+          if (err instanceof ApiError && err.body.code === 'cart_conflict') {
+            return
+          }
           const message =
             err instanceof ApiError ? err.body.message : 'Could not add to cart'
           toast.error(message)

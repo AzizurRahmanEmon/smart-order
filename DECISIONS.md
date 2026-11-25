@@ -1,35 +1,35 @@
 # Decisions (Smart Order Builder)
 
-Short notes in my own words for review checkpoints. Behavior should match this repo’s code.
+My notes for review checkpoints. Behavior matches this repo.
 
 ## C1 — Money as floats
 
-JavaScript `number` cannot represent 679.50 BDT exactly, so I keep **integer poisha** end-to-end and only format to BDT in the UI. For TC-06, VAT is `halfUpPoisha(5% × discounted subtotal)` on poisha integers, e.g. 1,509.50 BDT × 5% → 75.475 → **75.48 BDT** (7,548 poisha), then payable rounds half-up to whole BDT.
+I store money as integer poisha everywhere and only show BDT in the UI. Floats cannot represent amounts like 679.50 exactly. For TC-06, I compute VAT as five percent of the discounted subtotal in poisha and round half-up; 1,509.50 BDT becomes 75.48 BDT VAT, then the payable rounds to whole BDT.
 
 ## C2 — Assistant tools
 
-The sales chat exposes tools: `order_count`, `total_revenue`, `average_order_value`, `top_selling_options`, `revenue_by_payment_method`, `coupon_usage`, `revenue_by_day`, and `best_customer_check` (unsupported questions). Gemini picks a tool; numbers always come from `src/engine/stats.ts` over `GET /api/orders`.
+The chat bot can call eight tools: order count, total revenue, average order value, top selling options, revenue by payment method, coupon usage, revenue by day, and a stub for “best customer” when the question is unsupported. Gemini picks the tool; I compute every number in the stats module from the orders list returned by the API.
 
 ## D1 — Two tabs, last eggs
 
-Tab A’s edit uses PUT with server-side net-difference stock. If tab B takes the last eggs before save, tab A gets **409 insufficient_stock**. Unsaved builder state stays local; the cart line is unchanged until a successful save. Nothing is silently merged.
+If another tab takes the last eggs before I save an edit, the server rejects the PUT with insufficient stock and my cart line stays unchanged. My half-finished choices stay in the builder locally. If another tab changes the cart first, writes can also fail with a version conflict and the client refetches the cart instead of overwriting.
 
 ## D2 — When price is locked
 
-Cart/checkout totals are computed with **current server time** when you pay. Reservations do not freeze promo rules; expired coupons are rejected at checkout (same engine as TC-06/07). Builder preview is best-effort until items are in the cart.
+Prices at checkout use server time when I pay. A coupon in the field does not lock in morning pricing while the plate sits in the cart. At 11:00 or later, MORNING15 is rejected and the fixed cart discount can apply instead, consistent with TC-06 and TC-07. The live preview while I build is indicative only.
 
 ## D3 — Expiry mid-edit
 
-If the edited line expires, we exit edit mode, **keep** builder selections, show a banner to add as a new item, and block PUT. Save after expiry still returns 409 as a fallback. Successful edits keep the original `expiresAt`.
+If the reservation expires while I am editing, I leave the cart line alone, exit edit mode, keep my option picks on screen, and show a banner that I can add the same plate as a new item. Saving after expiry still fails on the server. A successful edit keeps the original expiry timestamp.
 
 ## D4 — Order id and double Pay
 
-The **mock server** generates order ids and `createdAt` at checkout. **Pay** sends an `Idempotency-Key`; retries return the same order and an empty cart without double-consuming stock (TC-16).
+The mock server assigns each order its id and created-at timestamp. Pay sends an idempotency key; a double click replays the same checkout response and clears the cart once without selling the same stock twice (TC-16).
 
 ## D5 — “Best customer”
 
-Orders have **no customer field**. The `best_customer_check` tool returns unsupported; the model must explain that we cannot name a customer (TC-20).
+Stored orders have no customer name or id. The best-customer tool answers that the data cannot support the question; the model must not invent a name (TC-20).
 
 ## D6 — Stored order JSON
 
-Each order stores: `id`, `createdAt`, `paymentMethod`, `couponCode` (entered, may be rejected), `lines[]` with `config` + `qty`, and `totals` from `priceCart` (all money in **poisha**). `couponCode` can be set while `totals.chosen !== 'coupon'` when the coupon expired or lost to C1.
+Each stored order has id, createdAt, paymentMethod, couponCode (what I typed, even if rejected), lines with config and qty, and totals from the pricing engine in poisha. couponCode can be set when totals show the fixed discount or no coupon discount, for example when the code expired or lost to the fixed cart offer.

@@ -15,6 +15,7 @@ export type CartLineDto = {
 
 export type CartResponse = {
   serverTime: string
+  version: number
   lines: CartLineDto[]
   reserved: Record<IngredientId, number>
   stock: Record<IngredientId, number>
@@ -27,6 +28,7 @@ export type ServerTimeResponse = {
 export type ApiErrorBody = {
   code: string
   message: string
+  currentVersion?: number
   details?: Violation[] | StockViolation[] | unknown
 }
 

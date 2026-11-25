@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { checkout } from '@/api/checkout'
 import { fetchOrders, fetchOrdersExport } from '@/api/orders'
-import type { PaymentMethod } from '@/types/api'
+import { handleCartApiError } from '@/lib/cartMutationError'
+import type { CartResponse, PaymentMethod } from '@/types/api'
 
 export function useOrders() {
   return useQuery({
@@ -32,10 +33,15 @@ export function useCheckout() {
       coupon?: string
       idempotencyKey: string
       signal?: AbortSignal
-    }) => checkout(paymentMethod, coupon, idempotencyKey, signal),
+    }) => {
+      const cart = qc.getQueryData<CartResponse>(['cart'])
+      const version = cart?.version ?? 1
+      return checkout(paymentMethod, coupon, idempotencyKey, version, signal)
+    },
     onSuccess: (data) => {
       qc.setQueryData(['cart'], data.cart)
       void qc.invalidateQueries({ queryKey: ['orders'] })
     },
+    onError: (err) => handleCartApiError(err, qc),
   })
 }

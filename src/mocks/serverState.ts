@@ -1,3 +1,4 @@
+import { MOCK_SERVER_STORAGE_KEY as STORAGE_KEY } from '@/lib/mockServerStorage'
 import menuFixture from '@/mocks/fixtures/menu.json'
 import { priceCart } from '@/engine/pricing'
 import { checkAdd, mergeReserved, usage } from '@/engine/stock'
@@ -14,7 +15,7 @@ import {
 } from './ordersSeed'
 
 const MENU = menuFixture as Menu
-const STORAGE_KEY = 'smart-order-mock-v1'
+export { STORAGE_KEY }
 const RESERVATION_MS = 5 * 60 * 1000
 const SERVER_AHEAD_MS = 90_000
 
@@ -28,6 +29,7 @@ export type StoredCartLine = {
 
 type PersistedState = {
   cartLines: StoredCartLine[]
+  cartVersion: number
   idempotency: Record<string, { status: number; body: unknown }>
   inventory: Record<IngredientId, number>
   orders: StoredOrder[]
@@ -35,6 +37,7 @@ type PersistedState = {
 }
 
 let cartLines: StoredCartLine[] = []
+let cartVersion = 1
 let idempotency: PersistedState['idempotency'] = {}
 let inventory: Record<IngredientId, number> = {}
 let orders: StoredOrder[] = []
@@ -80,6 +83,8 @@ function loadPersisted(): void {
     }
     const parsed = JSON.parse(raw) as PersistedState
     cartLines = parsed.cartLines ?? []
+    cartVersion = parsed.cartVersion ?? 1
+    pruneExpiredLinesOnBootstrap()
     idempotency = parsed.idempotency ?? {}
     inventory = parsed.inventory ?? defaultInventory()
     orders = parsed.orders ?? []
@@ -103,6 +108,7 @@ function persist(): void {
     STORAGE_KEY,
     JSON.stringify({
       cartLines,
+      cartVersion,
       idempotency,
       inventory,
       orders,
@@ -138,7 +144,43 @@ function activeLines(nowMs: number): StoredCartLine[] {
 }
 
 export function expireLazy(): void {
-  // Reserved is derived from non-expired lines at read time.
+  // Reserved is derived from non-expired lines at read time (no engine change).
+}
+
+/** Drop expired lines from persisted cart on cold load / refresh bootstrap only. */
+function pruneExpiredLinesOnBootstrap(): void {
+  const now = getServerNowMs()
+  cartLines = cartLines.filter((l) => l.expiresAtMs > now)
+}
+
+export function getCartVersion(): number {
+  return cartVersion
+}
+
+export function bumpCartVersion(): number {
+  cartVersion += 1
+  return cartVersion
+}
+
+export function matchCartVersion(
+  ifMatch: string | null,
+): ApiErrorBody | null {
+  if (ifMatch === null) {
+    return {
+      code: 'cart_conflict',
+      message: 'Cart version required',
+      currentVersion: cartVersion,
+    }
+  }
+  const parsed = Number.parseInt(ifMatch, 10)
+  if (!Number.isFinite(parsed) || parsed !== cartVersion) {
+    return {
+      code: 'cart_conflict',
+      message: 'Cart version mismatch',
+      currentVersion: cartVersion,
+    }
+  }
+  return null
 }
 
 export function reservedFromLines(lines: StoredCartLine[]): Record<IngredientId, number> {
@@ -163,6 +205,7 @@ export function buildCartResponse(): CartResponse {
   const active = activeLines(now)
   return {
     serverTime: new Date(now).toISOString(),
+    version: cartVersion,
     lines: cartLines.map((l) => toDto(l, now)),
     reserved: reservedFromLines(active),
     stock: getCatalogStock(),
@@ -191,6 +234,7 @@ export function addCartLine(
     expiresAtMs: now + RESERVATION_MS,
   }
   cartLines.push(line)
+  bumpCartVersion()
   persist()
   return { line }
 }
@@ -208,6 +252,7 @@ export function updateCartLine(
   if (!line) return undefined
   line.config = config
   line.qty = qty
+  bumpCartVersion()
   persist()
   return line
 }
@@ -216,6 +261,7 @@ export function removeCartLine(lineId: string): boolean {
   const idx = cartLines.findIndex((l) => l.id === lineId)
   if (idx < 0) return false
   cartLines.splice(idx, 1)
+  bumpCartVersion()
   persist()
   return true
 }
@@ -357,6 +403,7 @@ export function checkoutCart(
 
   orders = [order, ...orders]
   cartLines = []
+  bumpCartVersion()
   persist()
 
   return {
@@ -386,6 +433,7 @@ export function getOrdersExport(): {
 /** Test-only: reset in-memory state */
 export function resetMockServerState(): void {
   cartLines = []
+  cartVersion = 1
   idempotency = {}
   inventory = defaultInventory()
   orders = []
@@ -397,6 +445,7 @@ export function resetMockServerState(): void {
 
 export function reloadPersistedStateForTest(): void {
   cartLines = []
+  cartVersion = 1
   idempotency = {}
   inventory = {}
   orders = []
@@ -428,4 +477,11 @@ export function reservedExcludingLine(lineId: string): Record<IngredientId, numb
 
 export function reservedAll(): Record<IngredientId, number> {
   return reservedFromLines(getActiveLines())
+}
+
+/** Test-only: seed persisted cart lines then run bootstrap reload. */
+export function seedCartLinesForTest(lines: StoredCartLine[], version = 1): void {
+  cartLines = lines
+  cartVersion = version
+  persist()
 }
