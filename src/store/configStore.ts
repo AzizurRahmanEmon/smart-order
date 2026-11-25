@@ -1,25 +1,23 @@
 import { create } from 'zustand'
 
-import type { Config, IngredientId, Menu, OptionId } from '@/types/menu'
+import type { Config, Menu, OptionId } from '@/types/menu'
 
 type ConfigState = {
   config: Config
-  reserved: Record<IngredientId, number>
   couponCode: string
-  /** Server clock for pricing preview (Part C); replaced by MSW sync later. */
-  pricingNow: Date
+  editingLineId: string | null
   setQuantity: (optionId: OptionId, next: number) => void
-  setReserved: (reserved: Record<IngredientId, number>) => void
   setCouponCode: (code: string) => void
-  setPricingNow: (now: Date) => void
+  setEditingLineId: (lineId: string | null) => void
+  loadLineConfig: (config: Config) => void
+  resetBuilderConfig: () => void
   initFromMenu: (menu: Menu) => void
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
   config: {},
-  reserved: {},
   couponCode: '',
-  pricingNow: new Date('2025-06-01T04:59:59.000Z'),
+  editingLineId: null,
   setQuantity: (optionId, next) =>
     set((state) => ({
       config: {
@@ -27,9 +25,10 @@ export const useConfigStore = create<ConfigState>((set) => ({
         [optionId]: Math.max(0, next),
       },
     })),
-  setReserved: (reserved) => set({ reserved }),
   setCouponCode: (couponCode) => set({ couponCode }),
-  setPricingNow: (pricingNow) => set({ pricingNow }),
+  setEditingLineId: (editingLineId) => set({ editingLineId }),
+  loadLineConfig: (config) => set({ config }),
+  resetBuilderConfig: () => set({ config: {}, editingLineId: null }),
   initFromMenu: (menu) => {
     const config: Config = {}
     for (const group of menu.groups) {

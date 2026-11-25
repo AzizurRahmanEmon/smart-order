@@ -1,21 +1,22 @@
 import { Coffee, ShoppingBag } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
+import { toast } from 'sonner'
 
-import menuFixture from '@/mocks/fixtures/menu.json'
+import { ApiError } from '@/api/fetch'
 import { checkAdd } from '@/engine/stock'
 import { validate } from '@/engine/validate'
+import { useAddToCart, useCart, useUpdateCartLine } from '@/hooks/useCart'
+import { useMenu } from '@/hooks/useMenu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatBDT } from '@/lib/money'
 import { useConfigStore } from '@/store/configStore'
-import type { Menu, OptionId } from '@/types/menu'
+import type { OptionId } from '@/types/menu'
 
 import { Separator } from '@/components/ui/separator'
 
 import { OptionGroup } from './OptionGroup'
 import { ViolationList, type DisplayViolation } from './ViolationList'
-
-const menu = menuFixture as Menu
 
 function mergeViolations(
   ruleViolations: ReturnType<typeof validate>,
@@ -42,9 +43,19 @@ function mergeViolations(
 }
 
 export function Builder() {
+  const { data: menu, isLoading } = useMenu()
+  const { data: cart } = useCart()
   const config = useConfigStore((s) => s.config)
-  const reserved = useConfigStore((s) => s.reserved)
+  const editingLineId = useConfigStore((s) => s.editingLineId)
   const setQuantity = useConfigStore((s) => s.setQuantity)
+  const resetBuilderConfig = useConfigStore((s) => s.resetBuilderConfig)
+  const setEditingLineId = useConfigStore((s) => s.setEditingLineId)
+
+  const addMutation = useAddToCart()
+  const updateMutation = useUpdateCartLine()
+  const idempotencyRef = useRef<string | null>(null)
+
+  const reserved = cart?.reserved ?? {}
 
   const onQuantityChange = useMemo(
     () => (optionId: OptionId, next: number) => {
@@ -54,11 +65,12 @@ export function Builder() {
   )
 
   const violations = useMemo(() => {
+    if (!menu) return []
     const rules = validate(menu, config)
     const hasLineItems = Object.values(config).some((n) => (n ?? 0) > 0)
     const stock = hasLineItems ? checkAdd(menu, reserved, config, 1) : []
     return mergeViolations(rules, stock)
-  }, [config, reserved])
+  }, [config, menu, reserved])
 
   const selectedCount = Object.values(config).reduce(
     (sum, n) => sum + (n ?? 0),
@@ -66,6 +78,59 @@ export function Builder() {
   )
 
   const blocked = violations.length > 0
+  const isEditing = editingLineId !== null
+
+  const handlePrimaryAction = () => {
+    if (!menu || blocked || selectedCount === 0) return
+
+    if (isEditing && editingLineId) {
+      updateMutation.mutate(
+        { lineId: editingLineId, config, qty: 1 },
+        {
+          onSuccess: () => {
+            toast.success('Cart updated')
+            resetBuilderConfig()
+            setEditingLineId(null)
+          },
+          onError: (err) => {
+            const message =
+              err instanceof ApiError ? err.body.message : 'Update failed'
+            toast.error(message)
+          },
+        },
+      )
+      return
+    }
+
+    if (!idempotencyRef.current) {
+      idempotencyRef.current = crypto.randomUUID()
+    }
+    const key = idempotencyRef.current
+
+    addMutation.mutate(
+      { config, qty: 1, idempotencyKey: key },
+      {
+        onSuccess: () => {
+          toast.success('Added to cart')
+          resetBuilderConfig()
+        },
+        onError: (err) => {
+          const message =
+            err instanceof ApiError ? err.body.message : 'Could not add to cart'
+          toast.error(message)
+        },
+        onSettled: () => {
+          idempotencyRef.current = null
+        },
+      },
+    )
+  }
+
+  if (isLoading || !menu) {
+    return (
+      <p className="text-sm text-muted-foreground">Loading builder…</p>
+    )
+  }
 
   return (
     <section className="space-y-6">
@@ -79,12 +144,13 @@ export function Builder() {
             <div className="flex items-center gap-2">
               <Coffee className="size-5 text-primary" aria-hidden />
               <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-                Build your plate
+                {isEditing ? 'Edit plate' : 'Build your plate'}
               </h2>
             </div>
             <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-              Pick options in each section. Rule and stock issues must be
-              cleared before adding to cart.
+              {isEditing
+                ? 'Update options and save — reservation time stays the same.'
+                : 'Pick options in each section. Rule and stock issues must be cleared before adding to cart.'}
             </p>
           </div>
           <Badge
@@ -95,6 +161,22 @@ export function Builder() {
           </Badge>
         </div>
       </div>
+
+      {isEditing ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              resetBuilderConfig()
+              setEditingLineId(null)
+            }}
+          >
+            Cancel edit
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {menu.groups.map((group, index) => (
@@ -122,17 +204,25 @@ export function Builder() {
             {blocked
               ? 'Resolve all issues above to enable checkout.'
               : selectedCount > 0
-                ? 'Ready to add this plate to cart.'
+                ? isEditing
+                  ? 'Save to apply changes to this cart line.'
+                  : 'Ready to add this plate to cart.'
                 : 'Configure your plate above.'}
           </p>
           <Button
             type="button"
             size="lg"
             className="w-full shrink-0 sm:w-auto sm:min-w-44"
-            disabled={blocked || selectedCount === 0}
+            disabled={
+              blocked ||
+              selectedCount === 0 ||
+              addMutation.isPending ||
+              updateMutation.isPending
+            }
+            onClick={handlePrimaryAction}
           >
             <ShoppingBag data-icon="inline-start" />
-            Add to Cart
+            {isEditing ? 'Save changes' : 'Add to Cart'}
             {selectedCount > 0 ? (
               <Badge variant="secondary" className="ml-1 tabular-nums">
                 {selectedCount}

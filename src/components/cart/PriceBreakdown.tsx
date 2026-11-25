@@ -1,8 +1,11 @@
 import { Receipt } from 'lucide-react'
 import { useMemo } from 'react'
 
-import menuFixture from '@/mocks/fixtures/menu.json'
 import { priceCart } from '@/engine/pricing'
+import { useCart } from '@/hooks/useCart'
+import { useMenu } from '@/hooks/useMenu'
+import { usePricePreview } from '@/hooks/usePricePreview'
+import { useServerTimeOffset } from '@/hooks/useServerTime'
 import { Input } from '@/components/ui/input'
 import {
   Card,
@@ -11,31 +14,52 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 import { formatBDT } from '@/lib/money'
 import { useConfigStore } from '@/store/configStore'
-import type { Menu } from '@/types/menu'
-
-const menu = menuFixture as Menu
 
 export function PriceBreakdown() {
+  const { data: menu } = useMenu()
+  const { data: cart } = useCart()
   const config = useConfigStore((s) => s.config)
   const couponCode = useConfigStore((s) => s.couponCode)
-  const pricingNow = useConfigStore((s) => s.pricingNow)
   const setCouponCode = useConfigStore((s) => s.setCouponCode)
+  const { serverNow } = useServerTimeOffset()
 
-  const hasItems = Object.values(config).some((n) => (n ?? 0) > 0)
+  const cartLines = cart?.lines.filter((l) => !l.expired) ?? []
+  const hasCart = cartLines.length > 0
+  const hasBuilderItems = Object.values(config).some((n) => (n ?? 0) > 0)
 
-  const priced = useMemo(() => {
-    if (!hasItems) {
-      return null
-    }
-    return priceCart(menu, [{ config, qty: 1 }], {
-      coupon: couponCode,
-      now: pricingNow,
-    })
-  }, [config, couponCode, pricingNow, hasItems])
+  const cartPriced = useMemo(() => {
+    if (!menu || !hasCart) return null
+    const now = cart?.serverTime
+      ? new Date(cart.serverTime)
+      : serverNow()
+    return priceCart(
+      menu,
+      cartLines.map((l) => ({ config: l.config, qty: l.qty })),
+      { coupon: couponCode, now },
+    )
+  }, [menu, cartLines, couponCode, hasCart, cart?.serverTime, serverNow])
 
-  const line = priced?.lines[0]
+  const preview = usePricePreview(
+    config,
+    couponCode,
+    !hasCart && hasBuilderItems,
+  )
+
+  const priced = hasCart ? cartPriced : preview.data
+  const isStale =
+    !hasCart &&
+    preview.isFetching &&
+    preview.fetchStatus === 'fetching' &&
+    preview.data !== undefined
+
+  const couponRejection = hasCart
+    ? cartPriced?.couponRejection
+    : preview.data?.couponRejection
+
+  const showPreviewSource = !hasCart && hasBuilderItems
 
   return (
     <Card
@@ -46,45 +70,39 @@ export function PriceBreakdown() {
         <CardTitle className="flex items-center gap-2 text-base">
           <Receipt className="size-4 text-primary" aria-hidden />
           Price breakdown
+          {isStale ? (
+            <span className="ml-auto text-[0.65rem] font-normal text-muted-foreground">
+              Updating…
+            </span>
+          ) : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {!hasItems || !priced || !line ? (
+        {!priced ? (
           <p className="text-sm text-muted-foreground">
-            Build a plate to see live pricing.
+            {showPreviewSource
+              ? preview.isError
+                ? 'Price preview unavailable.'
+                : 'Calculating…'
+              : 'Build a plate or add to cart to see pricing.'}
           </p>
         ) : (
           <>
-            <div className="flex justify-between gap-2 text-sm">
-              <span className="text-muted-foreground">Unit (before cart promos)</span>
-              <span className="tabular-nums">
-                {formatBDT(
-                  line.unit +
-                    line.extrasDiscount +
-                    line.comboDiscount,
-                )}
-              </span>
-            </div>
-            {line.extrasDiscount > 0 ? (
-              <div className="flex justify-between gap-2 text-sm">
-                <span className="text-muted-foreground">Extras deal</span>
-                <span className="font-medium text-primary tabular-nums">
-                  −{formatBDT(line.extrasDiscount)}
-                </span>
+            {showPreviewSource && preview.isError ? (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-destructive" role="alert">
+                  Price fetch failed.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => preview.refetch()}
+                >
+                  Retry
+                </Button>
               </div>
             ) : null}
-            {line.comboDiscount > 0 ? (
-              <div className="flex justify-between gap-2 text-sm">
-                <span className="text-muted-foreground">Combo discount</span>
-                <span className="font-medium text-primary tabular-nums">
-                  −{formatBDT(line.comboDiscount)}
-                </span>
-              </div>
-            ) : null}
-            <div className="flex justify-between gap-2 text-sm">
-              <span className="text-muted-foreground">Line total ×1</span>
-              <span className="tabular-nums">{formatBDT(line.lineTotal)}</span>
-            </div>
             <div className="flex justify-between gap-2 text-sm">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="tabular-nums">{formatBDT(priced.subtotal)}</span>
@@ -102,7 +120,7 @@ export function PriceBreakdown() {
             ) : null}
             <div className="flex justify-between gap-2 text-sm">
               <span className="text-muted-foreground">
-                VAT ({menu.vatPercent}%)
+                VAT ({menu?.vatPercent ?? 0}%)
               </span>
               <span className="tabular-nums">{formatBDT(priced.vat)}</span>
             </div>
@@ -128,16 +146,16 @@ export function PriceBreakdown() {
             autoComplete="off"
             className="h-9"
           />
-          {couponCode.trim() && priced?.couponRejection ? (
+          {couponCode.trim() && couponRejection ? (
             <p className="text-xs text-destructive" role="status">
-              {priced.couponRejection === 'expired'
+              {couponRejection === 'expired'
                 ? 'Coupon expired for the current server time (after 11:00 Dhaka).'
                 : 'Invalid coupon code.'}
             </p>
           ) : null}
           {couponCode.trim() &&
           priced?.chosen === 'coupon' &&
-          !priced.couponRejection ? (
+          !couponRejection ? (
             <p className="text-xs text-primary" role="status">
               Coupon applied (−{formatBDT(priced.coupon)}).
             </p>
