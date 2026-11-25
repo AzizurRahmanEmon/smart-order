@@ -1,5 +1,5 @@
 import { Coffee, ShoppingBag } from 'lucide-react'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 
 import { ApiError } from '@/api/fetch'
@@ -10,7 +10,10 @@ import { useMenu } from '@/hooks/useMenu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatBDT } from '@/lib/money'
-import { useConfigStore } from '@/store/configStore'
+import {
+  EXPIRED_RESERVATION_BANNER,
+  useConfigStore,
+} from '@/store/configStore'
 import type { OptionId } from '@/types/menu'
 
 import { Separator } from '@/components/ui/separator'
@@ -47,15 +50,26 @@ export function Builder() {
   const { data: cart } = useCart()
   const config = useConfigStore((s) => s.config)
   const editingLineId = useConfigStore((s) => s.editingLineId)
+  const expiredEditBanner = useConfigStore((s) => s.expiredEditBanner)
   const setQuantity = useConfigStore((s) => s.setQuantity)
   const resetBuilderConfig = useConfigStore((s) => s.resetBuilderConfig)
   const setEditingLineId = useConfigStore((s) => s.setEditingLineId)
+  const setExpiredEditBanner = useConfigStore((s) => s.setExpiredEditBanner)
 
   const addMutation = useAddToCart()
   const updateMutation = useUpdateCartLine()
   const idempotencyRef = useRef<string | null>(null)
 
   const reserved = cart?.reserved ?? {}
+
+  useEffect(() => {
+    if (!editingLineId || !cart) return
+    const line = cart.lines.find((l) => l.id === editingLineId)
+    if (line?.expired) {
+      setEditingLineId(null)
+      setExpiredEditBanner(true)
+    }
+  }, [cart, editingLineId, setEditingLineId, setExpiredEditBanner])
 
   const onQuantityChange = useMemo(
     () => (optionId: OptionId, next: number) => {
@@ -112,6 +126,7 @@ export function Builder() {
       {
         onSuccess: () => {
           toast.success('Added to cart')
+          setExpiredEditBanner(false)
           resetBuilderConfig()
         },
         onError: (err) => {
@@ -161,6 +176,15 @@ export function Builder() {
           </Badge>
         </div>
       </div>
+
+      {expiredEditBanner ? (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-foreground"
+        >
+          {EXPIRED_RESERVATION_BANNER}
+        </div>
+      ) : null}
 
       {isEditing ? (
         <div className="flex flex-wrap gap-2">
