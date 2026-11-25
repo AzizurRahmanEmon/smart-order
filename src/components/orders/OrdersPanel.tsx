@@ -17,6 +17,37 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
+
+function OrderBreakdown({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string
+  value: string
+  emphasis?: boolean
+}) {
+  return (
+    <>
+      <dt
+        className={cn(
+          emphasis ? 'font-semibold text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        {label}
+      </dt>
+      <dd
+        className={cn(
+          'text-right font-mono tabular-nums',
+          emphasis && 'font-semibold text-foreground',
+        )}
+      >
+        {value}
+      </dd>
+    </>
+  )
+}
 
 export function OrdersPanel() {
   const { data: orders, isLoading } = useOrders()
@@ -50,72 +81,78 @@ export function OrdersPanel() {
           Orders
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-md">
-        <SheetHeader>
+      <SheetContent
+        showCloseButton
+        className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-md"
+      >
+        <SheetHeader className="shrink-0 border-b border-border/60 px-5 pt-5 pr-14 pb-4">
           <SheetTitle>Orders</SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="text-left">
             Stored on the mock server (including seed orders).
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="min-h-0 flex-1 py-2 pr-3">
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading orders…</p>
-          ) : !orders?.length ? (
-            <p className="text-sm text-muted-foreground">No orders yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {orders.map((order) => (
-                <li
-                  key={order.id}
-                  className="rounded-xl border border-border/80 bg-muted/30 p-3 text-sm"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-semibold">
-                      {order.id}
-                    </span>
-                    <Badge variant="secondary" className="text-[0.65rem]">
-                      {order.paymentMethod}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleString('en-BD', {
-                      timeZone: 'Asia/Dhaka',
-                    })}
-                  </p>
-                  <dl className="mt-2 space-y-1 text-xs">
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-muted-foreground">Subtotal</dt>
-                      <dd className="tabular-nums">
-                        {formatBDT(order.totals.subtotal)}
-                      </dd>
-                    </div>
-                    {order.totals.cartDiscount > 0 ? (
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Discount</dt>
-                        <dd className="tabular-nums">
-                          −{formatBDT(order.totals.cartDiscount)}
-                        </dd>
+
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="px-5 py-4 pr-6">
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading orders…</p>
+            ) : !orders?.length ? (
+              <p className="text-sm text-muted-foreground">No orders yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {orders.map((order) => (
+                  <li
+                    key={order.id}
+                    className="overflow-hidden rounded-xl border border-border/80 bg-card/80 p-4 text-sm shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs font-semibold tracking-tight">
+                          {order.id}
+                        </p>
+                        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleString('en-BD', {
+                            timeZone: 'Asia/Dhaka',
+                          })}
+                        </p>
                       </div>
-                    ) : null}
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-muted-foreground">VAT</dt>
-                      <dd className="tabular-nums">
-                        {formatBDT(order.totals.vat)}
-                      </dd>
+                      <Badge
+                        variant="secondary"
+                        className="shrink-0 text-[0.65rem] capitalize"
+                      >
+                        {order.paymentMethod}
+                      </Badge>
                     </div>
-                    <div className="flex justify-between gap-2 font-semibold">
-                      <dt>Payable</dt>
-                      <dd className="tabular-nums">
-                        {formatBDT(order.totals.payable)}
-                      </dd>
-                    </div>
-                  </dl>
-                </li>
-              ))}
-            </ul>
-          )}
+
+                    <dl className="mt-3 grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1.5 border-t border-border/60 pt-3 text-xs">
+                      <OrderBreakdown
+                        label="Subtotal"
+                        value={formatBDT(order.totals.subtotal)}
+                      />
+                      {order.totals.cartDiscount > 0 ? (
+                        <OrderBreakdown
+                          label="Discount"
+                          value={`−${formatBDT(order.totals.cartDiscount)}`}
+                        />
+                      ) : null}
+                      <OrderBreakdown
+                        label="VAT"
+                        value={formatBDT(order.totals.vat)}
+                      />
+                      <OrderBreakdown
+                        label="Payable"
+                        value={formatBDT(order.totals.payable)}
+                        emphasis
+                      />
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </ScrollArea>
-        <SheetFooter className="border-t border-border/60 pt-4">
+
+        <SheetFooter className="mt-0 shrink-0 border-t border-border/60 px-5 py-4">
           <Button
             type="button"
             className="w-full gap-2"

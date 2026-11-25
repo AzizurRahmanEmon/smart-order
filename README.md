@@ -1,14 +1,58 @@
-# DevsStream Cursor kit
+# Smart Order Builder
 
-Drop-in Cursor setup for the Smart Order Builder assessment. Copy these files into the **root of your Vite app** (merge, do not overwrite an existing `.gitignore` blindly).
+DevsStream frontend assessment — rules, shared stock, pricing, MSW cart/checkout, Gemini sales assistant.
 
-**Commit:** `AGENTS.md`, `.cursor/`, `.cursorignore`, `.env.example`, `docs/AI_WORKFLOW.md`.
+## Setup
 
-**Do not commit:** `PLAYBOOK.md` (this is your private guide), `.env`, `.env.local`.
+```bash
+npm install
+cp .env.example .env.local   # VITE_GEMINI_API_KEY + VITE_GEMINI_MODEL for sales chat
+npm run dev
+```
 
-1. Scaffold the Vite app, then copy this kit over it.
-2. Follow **PLAYBOOK.md** part by part. Start with Setup, then A → G.
-3. In Cursor, use Plan mode and `/plan-part` before each part. Write `DECISIONS.md` / `ANSWERS.md` yourself.
-4. Fill in `docs/AI_WORKFLOW.md` and adapt a short section into your submission README.
+- **Tests:** `npm test`
+- **Build:** `npm run build`
 
-Commands: `/plan-part`, `/tc`, `/review-diff`, `/commit`. Skills: `/add-acceptance-test`, `/engine-change`, `/money-check`, `/gemini-tool`.
+MSW is enabled in dev (`src/main.tsx`). The mock server is the source of truth for cart, stock, reservations, and orders.
+
+## Architecture
+
+| Area | Location |
+|------|----------|
+| Pure engines | `src/engine/` — `validate`, `stock`, `pricing`, `stats` |
+| Mock API | `src/mocks/` — `serverState`, `handlers`, fixtures |
+| Client API | `src/api/` + TanStack Query in `src/hooks/` |
+| UI state | `src/store/configStore.ts` (config, coupon, edit mode only) |
+| UI | `src/components/` — shadcn + Tailwind |
+| Assistant | `src/assistant/` — Gemini tool loop; stats tools in `engine/stats.ts` |
+
+Money is **integer poisha** (1 BDT = 100). Server time is 90s ahead of the browser; reservations last 5 minutes on server time.
+
+## Features (Parts A–F)
+
+- **A–C:** Rule engine, ingredient stock, pricing steps 1–6, live `/api/price` preview (debounced, stale-safe).
+- **D:** Idempotent add, atomic reserves/edits, expiry UX.
+- **E:** Checkout, persisted orders + seed repricing, download `orders.json`.
+- **F:** Gemini 2.5 Flash function calling; numbers only from local stats tools.
+
+**Part G** (multi-tab version, config persistence) not implemented.
+
+## Docs
+
+- `DECISIONS.md` — checkpoints D1–D6, C1–C2.
+- `ANSWERS.md` — Section 10; run `src/engine/answers.test.ts` to verify.
+
+## Trade-offs
+
+- Inventory is decremented on checkout in the mock server (not cart reservations alone).
+- Cheapest plate (Q2) is asserted for one valid candidate; full menu search omitted for time.
+- Gemini runs in the browser with a user-supplied key; tests mock the client.
+
+## Time spent
+
+_Approximate: fill in before submission._
+
+## Unfinished
+
+- Part G bonus scenarios.
+- Q4 explicit number in `ANSWERS.md` after TC-10 cart replay.
