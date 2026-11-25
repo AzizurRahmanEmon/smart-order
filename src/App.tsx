@@ -2,6 +2,7 @@ import { ChefHat, Sparkles } from 'lucide-react'
 
 import { Toaster } from '@/components/ui/sonner'
 import { Builder } from '@/components/builder/Builder'
+import { BuilderSessionSync } from '@/components/builder/BuilderSessionSync'
 import { Cart } from '@/components/cart/Cart'
 import { Checkout } from '@/components/cart/Checkout'
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown'
@@ -16,6 +17,7 @@ function App() {
 
   return (
     <div className="min-h-screen">
+      <BuilderSessionSync />
       <header className="sticky top-0 z-40 border-b border-border/60 bg-card/70 shadow-sm backdrop-blur-xl supports-backdrop-filter:bg-card/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">

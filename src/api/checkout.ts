@@ -6,6 +6,7 @@ export function checkout(
   paymentMethod: PaymentMethod,
   coupon: string | undefined,
   idempotencyKey: string,
+  cartVersion: number,
   signal?: AbortSignal,
 ): Promise<CheckoutResponse> {
   return apiFetch<CheckoutResponse>('/api/checkout', {
@@ -14,6 +15,7 @@ export function checkout(
     headers: {
       'Content-Type': 'application/json',
       'Idempotency-Key': idempotencyKey,
+      'If-Match': String(cartVersion),
     },
     body: JSON.stringify({
       paymentMethod,

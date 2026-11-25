@@ -1,5 +1,7 @@
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
+import { BUILDER_SESSION_STORAGE_KEY } from '@/lib/builderSession'
 import type { Config, Menu, OptionId } from '@/types/menu'
 
 export const EXPIRED_RESERVATION_BANNER =
@@ -19,31 +21,44 @@ type ConfigState = {
   initFromMenu: (menu: Menu) => void
 }
 
-export const useConfigStore = create<ConfigState>((set) => ({
-  config: {},
-  couponCode: '',
-  editingLineId: null,
-  expiredEditBanner: false,
-  setQuantity: (optionId, next) =>
-    set((state) => ({
-      config: {
-        ...state.config,
-        [optionId]: Math.max(0, next),
+export const useConfigStore = create<ConfigState>()(
+  persist(
+    (set) => ({
+      config: {},
+      couponCode: '',
+      editingLineId: null,
+      expiredEditBanner: false,
+      setQuantity: (optionId, next) =>
+        set((state) => ({
+          config: {
+            ...state.config,
+            [optionId]: Math.max(0, next),
+          },
+        })),
+      setCouponCode: (couponCode) => set({ couponCode }),
+      setEditingLineId: (editingLineId) => set({ editingLineId }),
+      setExpiredEditBanner: (expiredEditBanner) => set({ expiredEditBanner }),
+      loadLineConfig: (config) => set({ config }),
+      resetBuilderConfig: () =>
+        set({ config: {}, editingLineId: null, expiredEditBanner: false }),
+      initFromMenu: (menu) => {
+        const config: Config = {}
+        for (const group of menu.groups) {
+          for (const option of group.options) {
+            config[option.id] = 0
+          }
+        }
+        set({ config })
       },
-    })),
-  setCouponCode: (couponCode) => set({ couponCode }),
-  setEditingLineId: (editingLineId) => set({ editingLineId }),
-  setExpiredEditBanner: (expiredEditBanner) => set({ expiredEditBanner }),
-  loadLineConfig: (config) => set({ config }),
-  resetBuilderConfig: () =>
-    set({ config: {}, editingLineId: null, expiredEditBanner: false }),
-  initFromMenu: (menu) => {
-    const config: Config = {}
-    for (const group of menu.groups) {
-      for (const option of group.options) {
-        config[option.id] = 0
-      }
-    }
-    set({ config })
-  },
-}))
+    }),
+    {
+      name: BUILDER_SESSION_STORAGE_KEY,
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        config: state.config,
+        couponCode: state.couponCode,
+        editingLineId: state.editingLineId,
+      }),
+    },
+  ),
+)

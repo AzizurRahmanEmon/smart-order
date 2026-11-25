@@ -5,7 +5,11 @@ import menuFixture from '@/mocks/fixtures/menu.json'
 import type { Config, Menu } from '@/types/menu'
 
 import { handlers } from './handlers'
-import { buildConfig as buildConfigHelper } from './testHelpers'
+import {
+  buildConfig as buildConfigHelper,
+  cartIfMatchHeaders,
+  cartPostHeaders,
+} from './testHelpers'
 import {
   getCatalogStock,
   getOrdersNewestFirst,
@@ -25,10 +29,7 @@ function buildConfig(picks: Partial<Config>): Config {
 async function addPlate(key: string, config: Config, qty = 1) {
   return fetch('/api/cart', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Idempotency-Key': key,
-    },
+    headers: await cartPostHeaders(key),
     body: JSON.stringify({ config, qty }),
   })
 }
@@ -39,11 +40,11 @@ async function checkout(
 ) {
   return fetch('/api/checkout', {
     method: 'POST',
-    headers: {
+    headers: await cartIfMatchHeaders({
       'Content-Type': 'application/json',
       'Idempotency-Key': key,
       ...extraHeaders,
-    },
+    }),
     body: JSON.stringify({ paymentMethod: 'card', coupon: 'MORNING15' }),
   })
 }

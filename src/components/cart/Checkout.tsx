@@ -63,6 +63,10 @@ export function Checkout() {
           idempotencyRef.current = null
         },
         onError: (err) => {
+          if (err instanceof ApiError && err.body.code === 'cart_conflict') {
+            idempotencyRef.current = null
+            return
+          }
           const message =
             err instanceof ApiError ? err.body.message : 'Payment failed'
           toast.error(message)

@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import menuFixture from '@/mocks/fixtures/menu.json'
 import { buildConfig } from '@/mocks/testHelpers'
 import { buildSeedOrders } from '@/mocks/ordersSeed'
-import { priceCart } from '@/engine/pricing'
+import { enumerateRawConfigs } from '@/engine/enumerateConfigs'
+import { priceCart, priceLine } from '@/engine/pricing'
 import { usage } from '@/engine/stock'
 import { validate } from '@/engine/validate'
 import {
@@ -12,9 +13,10 @@ import {
   totalRevenue,
   revenueByPaymentMethod,
 } from '@/engine/stats'
-import type { Menu } from '@/types/menu'
+import type { Config, Menu } from '@/types/menu'
 
 const menu = menuFixture as Menu
+const priceAt = new Date('2026-11-25T10:00:00+06:00')
 
 /** Reference values for ANSWERS.md — run: npm test -- --run src/engine/answers.test.ts */
 describe('Section 10 reference answers', () => {
@@ -29,7 +31,6 @@ describe('Section 10 reference answers', () => {
       chili: 1,
     })
     let maxItems = 0
-    let limitIngredient = ''
     for (let qty = 1; qty <= 50; qty++) {
       const u = usage(menu, configC, qty)
       const ok = menu.ingredients.every((ing) => {
@@ -39,21 +40,38 @@ describe('Section 10 reference answers', () => {
       if (!ok) break
       maxItems = qty
     }
-    const uMax = usage(menu, configC, maxItems)
-    const uNext = usage(menu, configC, maxItems + 1)
+    let limitIngredient = ''
+    let minHeadroom = Infinity
     for (const ing of menu.ingredients) {
-      const d = (uNext[ing.id] ?? 0) - (uMax[ing.id] ?? 0)
-      if (d > 0) {
+      const perPlate = usage(menu, configC, 1)[ing.id] ?? 0
+      if (perPlate === 0) continue
+      const headroom = ing.stock / perPlate
+      if (headroom < minHeadroom) {
+        minHeadroom = headroom
         limitIngredient = ing.id
-        break
       }
     }
-    expect({ maxItems, limitIngredient }).toEqual({ maxItems: 2, limitIngredient: 'egg' })
+    expect({ maxItems, limitIngredient }).toEqual({ maxItems: 2, limitIngredient: 'cheese' })
+  })
+
+  it('Q5: each seed order payable and total revenue', () => {
+    const seed = buildSeedOrders(menu)
+    const payables = Object.fromEntries(
+      seed.map((o) => [o.id, o.totals.payableBDT]),
+    )
+    expect(payables).toEqual({
+      'ORD-1001': 339,
+      'ORD-1002': 713,
+      'ORD-1003': 1_271,
+      'ORD-1004': 578,
+      'ORD-1005': 866,
+      'ORD-1006': 1_228,
+    })
+    expect(totalRevenue(seed)).toBe(499_500)
   })
 
   it('Q5/Q6/Q7/Q8 seed aggregates', () => {
     const seed = buildSeedOrders(menu)
-    expect(totalRevenue(seed)).toBe(499_500)
     expect(topOptions(seed, 1)[0]).toEqual({ optionId: 'fried', units: 10 })
     const byMethod = revenueByPaymentMethod(seed)
     expect(byMethod.card).toBeGreaterThan(byMethod.bkash)
@@ -62,6 +80,18 @@ describe('Section 10 reference answers', () => {
     for (const o of seed) {
       expect(o.totals.payable).toBeGreaterThan(0)
     }
+  })
+
+  it('Q8: MORNING15 per seed order', () => {
+    const seed = buildSeedOrders(menu)
+    const byId = Object.fromEntries(seed.map((o) => [o.id, o]))
+    expect(byId['ORD-1001']!.totals.chosen).toBe('coupon')
+    expect(byId['ORD-1002']!.couponCode).toBeNull()
+    expect(byId['ORD-1003']!.totals.chosen).toBe('coupon')
+    expect(byId['ORD-1004']!.couponCode).toBeNull()
+    expect(byId['ORD-1005']!.totals.chosen).toBe('coupon')
+    expect(byId['ORD-1006']!.totals.couponRejection).toBe('expired')
+    expect(byId['ORD-1006']!.totals.chosen).not.toBe('coupon')
   })
 
   it('Q4: after TC-10 cart at 11:30', () => {
@@ -116,26 +146,41 @@ describe('Section 10 reference answers', () => {
       now: new Date('2026-11-25T11:30:00+06:00'),
     })
     expect(at1030.subtotal).toBe(114_000)
+    expect(at1030.coupon).toBe(15_000)
     expect(at1030.chosen).toBe('coupon')
+    expect(at1030.vat).toBe(4_950)
     expect(at1030.payableBDT).toBe(1_040)
     expect(at1130.chosen).toBe(null)
     expect(at1130.cartDiscount).toBe(0)
+    expect(at1130.vat).toBe(5_700)
     expect(at1130.payableBDT).toBe(1_197)
   })
 })
 
 describe('Q2 cheapest valid plate', () => {
-  it('toast + fried×1 + scrambled×1 + sausage', () => {
-    const config = buildConfig(menu, {
-      toast: 1,
-      fried: 1,
-      scrambled: 1,
-      sausage: 1,
-    })
-    expect(validate(menu, config)).toHaveLength(0)
-    const priced = priceCart(menu, [{ config, qty: 1 }], {
-      now: new Date('2026-11-25T10:00:00+06:00'),
-    })
-    expect(priced.payableBDT).toBe(394)
+  it('brute force over valid configs finds toast + fried×2 + tofu at 378 BDT payable', () => {
+    let bestPayable = Infinity
+    let bestUnit = Infinity
+    let bestConfig: Config | null = null
+
+    for (const config of enumerateRawConfigs(menu)) {
+      if (validate(menu, config).length > 0) continue
+      const line = priceLine(menu, config)
+      const cart = priceCart(menu, [{ config, qty: 1 }], { now: priceAt })
+      if (cart.payableBDT < bestPayable) {
+        bestPayable = cart.payableBDT
+        bestUnit = line.unit
+        bestConfig = config
+      }
+    }
+
+    expect(bestConfig).not.toBeNull()
+    expect(bestConfig!.toast).toBe(1)
+    expect(bestConfig!.fried).toBe(2)
+    expect(bestConfig!.tofu).toBe(1)
+    expect(bestConfig!.scrambled).toBe(0)
+    expect(bestConfig!.sausage).toBe(0)
+    expect(bestUnit).toBe(36_000)
+    expect(bestPayable).toBe(378)
   })
 })
