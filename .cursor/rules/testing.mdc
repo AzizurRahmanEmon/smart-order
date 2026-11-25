@@ -1,0 +1,17 @@
+---
+description: Vitest/RTL acceptance tests must use TC-xx ids and exact Section 9 values
+globs: "**/*.{test,spec}.{ts,tsx}"
+alwaysApply: false
+---
+
+# Testing
+
+- Name tests with the brief id: `TC-01` … `TC-20`. One scenario per test where practical.
+- Expected values are exact, from Section 9, using Appendix A data. Do not invent rounded alternatives.
+  - TC-05: A = 380.00, B = 679.50, C = 490.00 BDT
+  - TC-06 (B×1 + C×2, 10:59:59): subtotal 1,659.50; C2 = 150.00; VAT 75.48; payable 1,585
+  - TC-07 (same cart, 11:00:00, coupon entered): coupon rejected; C1 = 100.00; VAT 77.98; payable 1,637
+- Engine tests call pure functions with fixtures and an injected `serverTime`.
+- UI/API tests use MSW and a TanStack `QueryClient` (`retry: false` in tests). Do not hit the real network. Mock Gemini; unit-test stats against seed data (TC-18, TC-19).
+- Prefer a `buildConfig` / fixture helper over copy-pasted option maps.
+- Never weaken an assertion to make a test pass. If the engine disagrees with Section 9, the engine is wrong.

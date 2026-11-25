@@ -1,0 +1,16 @@
+---
+description: Plain UI with shadcn/ui and Tailwind only
+globs: src/components/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# UI
+
+- Plain, clean, responsive UI. Use **shadcn/ui components + Tailwind utilities only**. Do not add another component library (no MUI, Chakra, Ant, Mantine, Flowbite, DaisyUI, or a second Tailwind kit).
+- Import shadcn primitives from `@/components/ui/*`. Merge classes with `cn()` from `@/lib/utils`. Do not hand-roll a second class helper.
+- Disabled options and Add to Cart must be actually `disabled` (and announced), not only visually muted. Add to Cart stays disabled while `validate` reports a violation or stock is short.
+- Read menu, rules, stock, and promotions from the API. No hardcoded option ids, names, or limits.
+- Show remaining units per option and disable at 0. When blocked, list every short ingredient with the exact missing amount.
+- Show the full price breakdown: subtotal, each discount, VAT, payable.
+- Reservation countdown uses server time (offset from `serverTime`), not `Date.now()`. Expired items are read-only (remove allowed, edit not).
+- Toasts use **Sonner** (shadcn deprecated `toast` in favor of `sonner`). Do not add both.

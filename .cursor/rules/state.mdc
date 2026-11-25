@@ -1,0 +1,13 @@
+---
+description: Zustand is for client/UI state only; server state stays on MSW
+globs: src/store/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# State
+
+- Zustand holds **client/UI state only**: the in-progress configuration, chat panel open/close, and UI flags (e.g. which item is being edited).
+- Stock, cart, reservations, and orders live on the **MSW mock server**. It is the source of truth. The client store and TanStack Query cache only **mirror** server responses.
+- Never put a writable parallel cart, stock map, or order list in Zustand that can drift from the server.
+- Engines stay pure and outside the store. Do not call `validate`, stock helpers, or `priceCart` from inside a Zustand setter; UI/query code calls them, or the mock server does.
+- After a successful mutation, update from the server response or invalidate queries. Do not optimistically invent sold stock or reservations.

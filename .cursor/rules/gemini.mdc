@@ -1,0 +1,20 @@
+---
+description: Gemini sales-assistant function calling, tool results, and error states
+globs:
+  - src/**/*chat*.{ts,tsx}
+  - src/**/*assistant*.{ts,tsx}
+  - src/**/*gemini*.{ts,tsx}
+  - src/**/*stats*.{ts,tsx}
+alwaysApply: false
+---
+
+# Gemini
+
+- Numbers come from our code, never from the model. Use `@google/genai` function calling with a Flash model: the model picks a tool, we run a pure function over orders JSON, the model only phrases the result.
+- Do not send raw orders to the model and ask it to add them up.
+- Tools must cover at least: order count, total revenue, best-selling option (by units), revenue by payment method, average order value, coupon-applied count, orders on a given date.
+- If the data cannot answer the question, say so. Never invent a customer name or a number.
+- Answers must reflect new checkouts immediately (read the current orders query/store, no full page reload).
+- Key from `VITE_GEMINI_API_KEY` only. Never commit `.env.local`.
+- UI must show a clear state for: missing key, invalid key, quota (429), and network errors.
+- Unit-test stats against seed data; mock the Gemini client in UI tests.

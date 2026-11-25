@@ -1,0 +1,14 @@
+---
+description: Core non-negotiables for the Smart Order Builder assessment
+alwaysApply: true
+---
+
+# Core
+
+- Logic assessment, not design. Plain, accessible, responsive UI is enough.
+- Data-driven: menu, rules, ingredients, stock, and promotions come from the mock API. Never hardcode option ids, names, or limits. A different fixture must work with no code changes.
+- Layout: `src/engine/` pure functions; `src/mocks/` MSW + fixtures; `src/api/` native fetch; `src/store/` Zustand UI state; `src/ui/` shadcn + Tailwind.
+- Stack stays exact: React 18, TS strict, Vite, Tailwind v4, shadcn/ui only, Zustand, TanStack Query + `fetch` (no axios), MSW, Vitest/RTL, `@google/genai`.
+- Workflow: plan → failing TC-xx test → implement → small conventional commit.
+- Never write or rewrite prose in `DECISIONS.md` or `ANSWERS.md`. Ask questions or give a checklist. The user writes those in their own words.
+- Do not start Part G until A–F are tested and passing.

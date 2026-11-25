@@ -1,0 +1,15 @@
+---
+description: MSW mock server behavior for menu, price, cart, reservations, orders
+globs: src/mocks/**/*.{ts,tsx,json}
+alwaysApply: false
+---
+
+# Mocks
+
+- Serve Appendix A, promotions, and seed orders from the mock API. Fixtures are data. Do not duplicate their ids, names, or limits in engine or UI code.
+- Simulated latency 200–1500 ms on relevant endpoints. `/price` also fails randomly 15% of the time.
+- Include a `serverTime` field. The mock clock runs **90 seconds ahead** of the browser. Reservations last 5 minutes on that clock.
+- Add to Cart and Pay accept an idempotency key. The same key returns the same item or order; it must not create a second one.
+- Reservations are atomic (all-or-nothing). A failed reserve leaves no partial stock hold. Edit is one atomic swap of old allocation for new (net difference).
+- Pay is atomic: reserved stock becomes sold, cart empties, one order is stored as JSON (survives refresh). Load `orders.seed.json` on first start and price each seed with `priceCart` at its `createdAt`.
+- The mock server is the source of truth for stock, cart, reservations, and orders. Do not build a real backend.

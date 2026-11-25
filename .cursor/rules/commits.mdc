@@ -1,0 +1,17 @@
+---
+description: Conventional, small commits. Apply when staging, committing, or writing a commit message.
+alwaysApply: false
+---
+
+# Commits
+
+Reviewers read the git history. Keep commits small and human-authored in intent.
+
+- Format: `type(scope): short imperative summary` (50–72 chars).
+- Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `build`.
+- Scopes such as: `setup`, `engine`, `stock`, `pricing`, `mocks`, `api`, `ui`, `cart`, `orders`, `assistant`.
+- One concern per commit, for example `test(engine): add failing TC-01 to TC-04` then `feat(engine): collect all validate violations`.
+- Do not bundle unrelated files, `dist`, or `.env.local`. Do not commit `PLAYBOOK.md`.
+- Do not commit `DECISIONS.md` or `ANSWERS.md` prose the agent wrote. Those files are the user's words.
+- Do not amend or force-push unless the user asks.
+- After committing, show `git log -1 --stat` and stop.

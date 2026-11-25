@@ -1,0 +1,15 @@
+---
+description: Pure engine rules for validate, stock, and priceCart
+globs: src/engine/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Engine
+
+- Export pure functions only: `validate`, stock helpers, `priceCart`, assistant stats. No React, no MSW, no `fetch`, no Zustand, no `Date.now()`, no `Math.random()`.
+- `validate(config, groups, rules)` collects **every** violation (never return early). Each item has `groupId` and/or `ruleId` plus a message built from fixture data, not hardcoded names.
+- Apply `overrideLimit` first so the override max wins, then group `min` / `max` / `step` / `maxDistinct` / `maxPerOption`, then `requires` / `excludes`.
+- Empty optional groups (`min` 0) are valid. `total % step === 0` holds for 0.
+- Stock is shared across the cart and the in-progress config. Cart quantity (1–3) multiplies usage. Edits use the **net difference**: the item's current allocation is available to itself. List every short ingredient and the exact missing amount.
+- Money is integer poisha (1 BDT = 100). Apply brief steps 1–6 in order. Percentage steps round half-up to the nearest poisha; only final payable rounds half-up to whole BDT.
+- `priceCart(cart, menu, promos, serverTime)` takes server time as an argument. Never read the clock itself.

@@ -1,0 +1,16 @@
+---
+description: TanStack Query + native fetch for server calls, stale cancellation, idempotent mutations
+globs:
+  - src/api/**/*.{ts,tsx}
+  - src/hooks/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Query
+
+- All server calls use **TanStack Query** over native `fetch`. Do not add axios or another HTTP client.
+- Fetchers accept and forward `AbortSignal`. In `queryFn`, pass the `signal` argument into `fetch`.
+- Price preview: debounce 300 ms, then query. The query key includes a **stable hash of the configuration**. When the key changes, the previous request is cancelled via `signal` so an older response cannot replace a newer price (TC-12).
+- Simulated `/price` failures (15%): keep the current configuration and show a Retry action. Do not clear the builder.
+- Add to Cart and Pay are **mutations** that send an idempotency key. Retries of the same click use the same key. A new user intent gets a new key.
+- On mutation success, treat the response as source of truth and invalidate or set query data for cart, stock, and orders. Do not write those into Zustand.

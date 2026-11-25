@@ -1,0 +1,8 @@
+# Secrets — never index or @-mention a real key
+.env
+.env.local
+.env*.local
+
+# Build / coverage (also ignored by Cursor defaults)
+dist
+coverage
