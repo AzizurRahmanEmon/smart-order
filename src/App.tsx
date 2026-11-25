@@ -6,6 +6,7 @@ import { Cart } from '@/components/cart/Cart'
 import { Checkout } from '@/components/cart/Checkout'
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown'
 import { SalesChatSheet } from '@/components/chat/SalesChatSheet'
+import { OrdersPanel } from '@/components/orders/OrdersPanel'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useMenu } from '@/hooks/useMenu'
@@ -37,7 +38,10 @@ function App() {
               </h1>
             </div>
           </div>
-          <SalesChatSheet />
+          <div className="flex items-center gap-2">
+            <OrdersPanel />
+            <SalesChatSheet />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 lg:py-8">

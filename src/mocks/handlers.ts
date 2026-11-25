@@ -10,18 +10,24 @@ import {
   addCartLine,
   buildAddResponse,
   buildCartResponse,
+  checkoutCart,
   getIdempotency,
   getLine,
   getMenu,
+  getOrdersExport,
+  getOrdersNewestFirst,
   getServerNowMs,
   getServerTimeIso,
+  getStockMenu,
   removeCartLine,
   reservedAll,
   setIdempotency,
   updateCartLine,
 } from './serverState'
+import type { PaymentMethod } from './ordersSeed'
 
 function latencyMs(): number {
+  if (import.meta.env.MODE === 'test') return 0
   return 200 + Math.floor(Math.random() * 1_301)
 }
 
@@ -82,7 +88,7 @@ export const handlers = [
     const body = (await request.json()) as { config: Config; qty?: number }
     const config = body.config ?? {}
     const qty = clampQty(body.qty)
-    const menu = getMenu()
+    const menu = getStockMenu()
 
     const violations = validate(menu, config)
     if (violations.length > 0) {
@@ -127,7 +133,7 @@ export const handlers = [
     const body = (await request.json()) as { config: Config; qty?: number }
     const newConfig = body.config ?? {}
     const newQty = clampQty(body.qty ?? line.qty)
-    const menu = getMenu()
+    const menu = getStockMenu()
 
     const violations = validate(menu, newConfig)
     if (violations.length > 0) {
@@ -197,5 +203,63 @@ export const handlers = [
       ...priced,
       serverTime: getServerTimeIso(),
     })
+  }),
+
+  http.get('/api/orders', async () => {
+    await delay()
+    return HttpResponse.json(getOrdersNewestFirst())
+  }),
+
+  http.get('/api/orders/export', async () => {
+    await delay()
+    return HttpResponse.json(getOrdersExport())
+  }),
+
+  http.post('/api/checkout', async ({ request }) => {
+    await delay()
+
+    const idempotencyKey = request.headers.get('Idempotency-Key')
+    if (!idempotencyKey) {
+      return jsonError(400, {
+        code: 'missing_idempotency_key',
+        message: 'Idempotency-Key header required',
+      })
+    }
+
+    const cached = getIdempotency(idempotencyKey)
+    if (cached) {
+      return HttpResponse.json(cached.body as Record<string, unknown>, {
+        status: cached.status,
+      })
+    }
+
+    const body = (await request.json()) as {
+      paymentMethod?: PaymentMethod
+      coupon?: string
+    }
+    const paymentMethod = body.paymentMethod ?? 'card'
+    if (!['card', 'bkash', 'cash'].includes(paymentMethod)) {
+      return jsonError(422, {
+        code: 'invalid_payment_method',
+        message: 'Payment method must be card, bkash, or cash',
+      })
+    }
+
+    const mockFail = request.headers.get('X-Mock-Fail') === 'checkout'
+    const result = checkoutCart(paymentMethod, body.coupon, {
+      mockFailAfterValidate: mockFail,
+    })
+
+    if (!result.ok) {
+      const err = jsonError(result.status, result.body)
+      return err
+    }
+
+    const response = {
+      order: result.order,
+      cart: result.cart,
+    }
+    setIdempotency(idempotencyKey, 201, response)
+    return HttpResponse.json(response, { status: 201 })
   }),
 ]

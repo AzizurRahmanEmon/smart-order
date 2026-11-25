@@ -37,3 +37,30 @@ export type AddCartResponse = CartResponse & {
 export type PricePreviewResponse = PriceCartResult & {
   serverTime: string
 }
+
+export type PaymentMethod = 'card' | 'bkash' | 'cash'
+
+export type OrderLineDto = {
+  qty: number
+  config: Config
+}
+
+export type OrderDto = {
+  id: string
+  createdAt: string
+  paymentMethod: PaymentMethod
+  couponCode: string | null
+  lines: OrderLineDto[]
+  totals: PriceCartResult
+}
+
+export type CheckoutResponse = {
+  order: OrderDto
+  cart: CartResponse
+}
+
+export type OrdersExport = {
+  schemaVersion: number
+  currency: string
+  orders: OrderDto[]
+}
