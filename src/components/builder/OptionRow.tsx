@@ -9,7 +9,8 @@ import type { MenuOption } from '@/types/menu'
 type OptionRowProps = {
   option: MenuOption
   quantity: number
-  stockLeft: number | null
+  /** More units of this option that fit in stock (Infinity = unlimited). */
+  addableMore: number
   onDecrement: () => void
   onIncrement: () => void
 }
@@ -17,13 +18,14 @@ type OptionRowProps = {
 export function OptionRow({
   option,
   quantity,
-  stockLeft,
+  addableMore,
   onDecrement,
   onIncrement,
 }: OptionRowProps) {
-  const atStockCap = stockLeft !== null && quantity >= stockLeft
+  const unlimited = !Number.isFinite(addableMore)
+  const atStockCap = !unlimited && addableMore <= 0
   const selected = quantity > 0
-  const lowStock = stockLeft !== null && stockLeft <= 3
+  const lowStock = !unlimited && addableMore <= 3
 
   return (
     <div
@@ -45,12 +47,12 @@ export function OptionRow({
           {option.price > 0 ? formatBDT(option.price) : 'Included'}
         </p>
       </div>
-      {stockLeft !== null ? (
+      {!unlimited ? (
         <Badge
           variant={lowStock ? 'destructive' : 'secondary'}
           className={cn(!lowStock && 'bg-accent text-accent-foreground')}
         >
-          {stockLeft} left
+          {addableMore} left
         </Badge>
       ) : null}
       <div className="flex items-center gap-0.5 rounded-full border border-border/80 bg-background/80 p-0.5 shadow-sm">

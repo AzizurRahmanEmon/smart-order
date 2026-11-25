@@ -1,9 +1,13 @@
 import { AlertTriangle } from 'lucide-react'
 
-import type { Violation } from '@/engine/validate'
+export type DisplayViolation = {
+  code: string
+  message: string
+  key: string
+}
 
 type ViolationListProps = {
-  violations: Violation[]
+  violations: DisplayViolation[]
 }
 
 export function ViolationList({ violations }: ViolationListProps) {
@@ -29,7 +33,7 @@ export function ViolationList({ violations }: ViolationListProps) {
           </p>
           <ul className="space-y-2 text-sm leading-relaxed text-destructive/90">
             {violations.map((v) => (
-              <li key={`${v.code}-${v.groupId ?? ''}-${v.optionId ?? ''}-${v.ruleId ?? ''}-${v.message}`} className="flex gap-2">
+              <li key={v.key} className="flex gap-2">
                 <span
                   aria-hidden
                   className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive/70"

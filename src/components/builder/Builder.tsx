@@ -2,6 +2,7 @@ import { Coffee, ShoppingBag } from 'lucide-react'
 import { useMemo } from 'react'
 
 import menuFixture from '@/mocks/fixtures/menu.json'
+import { checkAdd } from '@/engine/stock'
 import { validate } from '@/engine/validate'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,12 +13,37 @@ import type { Menu, OptionId } from '@/types/menu'
 import { Separator } from '@/components/ui/separator'
 
 import { OptionGroup } from './OptionGroup'
-import { ViolationList } from './ViolationList'
+import { ViolationList, type DisplayViolation } from './ViolationList'
 
 const menu = menuFixture as Menu
 
+function mergeViolations(
+  ruleViolations: ReturnType<typeof validate>,
+  stockViolations: ReturnType<typeof checkAdd>,
+): DisplayViolation[] {
+  const items: DisplayViolation[] = ruleViolations.map((v) => ({
+    code: v.code,
+    message: v.message,
+    key: `rule-${v.code}-${v.groupId ?? ''}-${v.optionId ?? ''}-${v.ruleId ?? ''}-${v.message}`,
+  }))
+
+  const stockSeen = new Set<string>()
+  for (const s of stockViolations) {
+    if (stockSeen.has(s.message)) continue
+    stockSeen.add(s.message)
+    items.push({
+      code: s.code,
+      message: s.message,
+      key: `stock-${s.ingredientId}-${s.message}`,
+    })
+  }
+
+  return items
+}
+
 export function Builder() {
   const config = useConfigStore((s) => s.config)
+  const reserved = useConfigStore((s) => s.reserved)
   const setQuantity = useConfigStore((s) => s.setQuantity)
 
   const onQuantityChange = useMemo(
@@ -27,12 +53,19 @@ export function Builder() {
     [setQuantity],
   )
 
-  const violations = useMemo(() => validate(menu, config), [config])
+  const violations = useMemo(() => {
+    const rules = validate(menu, config)
+    const hasLineItems = Object.values(config).some((n) => (n ?? 0) > 0)
+    const stock = hasLineItems ? checkAdd(menu, reserved, config, 1) : []
+    return mergeViolations(rules, stock)
+  }, [config, reserved])
 
   const selectedCount = Object.values(config).reduce(
     (sum, n) => sum + (n ?? 0),
     0,
   )
+
+  const blocked = violations.length > 0
 
   return (
     <section className="space-y-6">
@@ -50,8 +83,8 @@ export function Builder() {
               </h2>
             </div>
             <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-              Pick options in each section. Issues below must be cleared before
-              you can add to cart.
+              Pick options in each section. Rule and stock issues must be
+              cleared before adding to cart.
             </p>
           </div>
           <Badge
@@ -67,17 +100,18 @@ export function Builder() {
         {menu.groups.map((group, index) => (
           <OptionGroup
             key={group.id}
+            menu={menu}
             group={group}
             groupIndex={index}
-            ingredients={menu.ingredients}
-            quantities={config}
+            config={config}
+            reserved={reserved}
             onQuantityChange={onQuantityChange}
           />
         ))}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm ring-1 ring-foreground/5">
-        {violations.length > 0 ? (
+        {blocked ? (
           <div className="p-4 sm:p-5">
             <ViolationList violations={violations} />
           </div>
@@ -85,15 +119,17 @@ export function Builder() {
         <Separator />
         <div className="flex flex-col gap-3 bg-muted/25 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <p className="text-sm text-muted-foreground">
-            {violations.length > 0
+            {blocked
               ? 'Resolve all issues above to enable checkout.'
-              : 'Configuration is valid — stock checks apply when you add to cart.'}
+              : selectedCount > 0
+                ? 'Ready to add this plate to cart.'
+                : 'Configure your plate above.'}
           </p>
           <Button
             type="button"
             size="lg"
             className="w-full shrink-0 sm:w-auto sm:min-w-44"
-            disabled={violations.length > 0}
+            disabled={blocked || selectedCount === 0}
           >
             <ShoppingBag data-icon="inline-start" />
             Add to Cart

@@ -6,9 +6,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { stockLeft } from '@/engine/stock'
+import { maxAddable } from '@/engine/stock'
 import { formatGroupLimitHint } from '@/lib/groupLimits'
-import type { Group, Ingredient, OptionId } from '@/types/menu'
+import type { Config, Group, IngredientId, Menu, OptionId } from '@/types/menu'
 
 import { OptionRow } from './OptionRow'
 
@@ -22,18 +22,20 @@ const ACCENT = [
 ] as const
 
 type OptionGroupProps = {
+  menu: Menu
   group: Group
   groupIndex: number
-  ingredients: Ingredient[]
-  quantities: Record<OptionId, number>
+  config: Config
+  reserved: Record<IngredientId, number>
   onQuantityChange: (optionId: OptionId, next: number) => void
 }
 
 export function OptionGroup({
+  menu,
   group,
   groupIndex,
-  ingredients,
-  quantities,
+  config,
+  reserved,
   onQuantityChange,
 }: OptionGroupProps) {
   const accent = ACCENT[groupIndex % ACCENT.length]
@@ -54,15 +56,15 @@ export function OptionGroup({
       </CardHeader>
       <CardContent className="space-y-1 pt-0">
         {group.options.map((option) => {
-          const quantity = quantities[option.id] ?? 0
-          const remaining = stockLeft(option, ingredients)
+          const quantity = config[option.id] ?? 0
+          const addableMore = maxAddable(menu, reserved, option.id, config)
 
           return (
             <OptionRow
               key={option.id}
               option={option}
               quantity={quantity}
-              stockLeft={remaining}
+              addableMore={addableMore}
               onDecrement={() =>
                 onQuantityChange(option.id, Math.max(0, quantity - 1))
               }
