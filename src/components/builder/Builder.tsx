@@ -62,7 +62,7 @@ export function Builder() {
   const updateMutation = useUpdateCartLine()
   const idempotencyRef = useRef<string | null>(null)
 
-  const reserved = cart?.reserved ?? {}
+  const reserved = useMemo(() => cart?.reserved ?? {}, [cart])
 
   useEffect(() => {
     if (!editingLineId || !cart) return

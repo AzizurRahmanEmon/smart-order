@@ -29,13 +29,16 @@ export function PriceBreakdown() {
   const setCouponCode = useConfigStore((s) => s.setCouponCode)
   const { serverNow } = useServerTimeOffset()
 
-  const cartLines = cart?.lines.filter((l) => !l.expired) ?? []
+  const cartLines = useMemo(
+    () => cart?.lines.filter((l) => !l.expired) ?? [],
+    [cart],
+  )
   const hasCart = cartLines.length > 0
   const hasBuilderItems = Object.values(config).some((n) => (n ?? 0) > 0)
 
   const cartPriced = useMemo(() => {
-    if (!menu || !hasCart) return null
-    const now = cart?.serverTime
+    if (!menu || !cart || cartLines.length === 0) return null
+    const now = cart.serverTime
       ? new Date(cart.serverTime)
       : serverNow()
     return priceCart(
@@ -43,7 +46,7 @@ export function PriceBreakdown() {
       cartLines.map((l) => ({ config: l.config, qty: l.qty })),
       { coupon: couponCode, now },
     )
-  }, [menu, cartLines, couponCode, hasCart, cart?.serverTime, serverNow])
+  }, [menu, cart, cartLines, couponCode, serverNow])
 
   const preview = usePricePreview(
     config,

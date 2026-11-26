@@ -34,10 +34,9 @@ export function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
   const idempotencyRef = useRef<string | null>(null)
 
-  const lines = cart?.lines ?? []
   const blockReason = useMemo(
-    () => cartCheckoutBlocked(menu, lines),
-    [menu, lines],
+    () => cartCheckoutBlocked(menu, cart?.lines ?? []),
+    [menu, cart],
   )
 
   const payDisabled =
