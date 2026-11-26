@@ -151,7 +151,7 @@ export function PriceBreakdown() {
             id="coupon-code"
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value)}
-            placeholder="MORNING15"
+            placeholder="Enter coupon code"
             autoComplete="off"
             className="h-9"
           />

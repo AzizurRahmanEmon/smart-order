@@ -17,10 +17,10 @@ import {
 } from '@/store/configStore'
 import type { OptionId } from '@/types/menu'
 
-import { Separator } from '@/components/ui/separator'
-
 import { OptionGroup } from './OptionGroup'
 import { BuilderSkeleton } from '@/components/skeleton/PageSkeletons'
+
+import { indexGroupViolations } from '@/lib/groupViolations'
 
 import { ViolationList, type DisplayViolation } from './ViolationList'
 
@@ -81,18 +81,38 @@ export function Builder() {
     [setQuantity],
   )
 
-  const violations = useMemo(() => {
-    if (!menu) return []
-    const rules = validate(menu, config)
-    const hasLineItems = Object.values(config).some((n) => (n ?? 0) > 0)
-    const stock = hasLineItems ? checkAdd(menu, reserved, config, 1) : []
-    return mergeViolations(rules, stock)
-  }, [config, menu, reserved])
+  const { violations, ruleViolations, violationsByGroup } =
+    useMemo(() => {
+      if (!menu) {
+        return {
+          violations: [] as DisplayViolation[],
+          ruleViolations: [],
+          stockViolations: [],
+          violationsByGroup: new Map(),
+        }
+      }
+      const rules = validate(menu, config)
+      const hasLineItems = Object.values(config).some((n) => (n ?? 0) > 0)
+      const stock = hasLineItems ? checkAdd(menu, reserved, config, 1) : []
+      return {
+        violations: mergeViolations(rules, stock),
+        ruleViolations: rules,
+        stockViolations: stock,
+        violationsByGroup: indexGroupViolations(menu, config, rules, stock),
+      }
+    }, [config, menu, reserved])
 
   const selectedCount = Object.values(config).reduce(
     (sum, n) => sum + (n ?? 0),
     0,
   )
+
+  const unassignedViolations = useMemo(() => {
+    const inCards = new Set(
+      [...violationsByGroup.values()].flat().map((v) => v.key),
+    )
+    return violations.filter((v) => !inCards.has(v.key))
+  }, [violations, violationsByGroup])
 
   const blocked = violations.length > 0
   const isEditing = editingLineId !== null
@@ -209,6 +229,10 @@ export function Builder() {
         </div>
       ) : null}
 
+      {unassignedViolations.length > 0 ? (
+        <ViolationList violations={unassignedViolations} />
+      ) : null}
+
       <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:gap-5">
         {menu.groups.map((group, index) => (
           <OptionGroup
@@ -218,27 +242,28 @@ export function Builder() {
             groupIndex={index}
             config={config}
             reserved={reserved}
+            groupViolations={violationsByGroup.get(group.id) ?? []}
+            ruleViolations={ruleViolations}
             onQuantityChange={onQuantityChange}
           />
         ))}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm ring-1 ring-foreground/5">
-        {blocked ? (
-          <div className="p-4 sm:p-5">
-            <ViolationList violations={violations} />
-          </div>
-        ) : null}
-        <Separator />
         <div className="flex flex-col gap-3 bg-muted/25 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <p className="text-sm text-muted-foreground">
-            {blocked
-              ? 'Resolve all issues above to enable checkout.'
-              : selectedCount > 0
-                ? isEditing
-                  ? 'Save to apply changes to this cart line.'
-                  : 'Ready to add this plate to cart.'
-                : 'Configure your plate above.'}
+            {blocked ? (
+              <span className="text-destructive/90" role="status">
+                Fix the highlighted issues in the sections above before adding to
+                cart.
+              </span>
+            ) : selectedCount > 0 ? (
+              isEditing
+                ? 'Save to apply changes to this cart line.'
+                : 'Ready to add this plate to cart.'
+            ) : (
+              'Configure your plate above.'
+            )}
           </p>
           <Button
             type="button"

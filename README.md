@@ -11,7 +11,9 @@ npm run dev
 ```
 
 - **Tests:** `npm test`
+- **Lint + test + build (submit gate):** `npm run verify`
 - **Build:** `npm run build`
+- **CI:** GitHub Actions runs the same checks on push/PR (`.github/workflows/ci.yml`)
 - **Production preview with mocks:** `npm run build:demo && npm run preview` (plain `build` + `preview` has no MSW unless built with demo env)
 
 MSW is enabled in dev (`src/main.tsx`) and in demo builds (`.env.demo` → `VITE_ENABLE_MSW=true`). The mock server is the source of truth for cart, stock, reservations, and orders.

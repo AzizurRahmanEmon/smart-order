@@ -10,6 +10,11 @@ import { maxAddable } from '@/engine/stock'
 import { formatGroupLimitHint } from '@/lib/groupLimits'
 import type { Config, Group, IngredientId, Menu, OptionId } from '@/types/menu'
 
+import type { GroupViolation } from '@/lib/groupViolations'
+import { optionViolations } from '@/lib/groupViolations'
+import type { Violation } from '@/engine/validate'
+
+import { GroupViolationAlerts } from './GroupViolationAlerts'
 import { OptionRow } from './OptionRow'
 
 const ACCENT = [
@@ -27,6 +32,8 @@ type OptionGroupProps = {
   groupIndex: number
   config: Config
   reserved: Record<IngredientId, number>
+  groupViolations: GroupViolation[]
+  ruleViolations: Violation[]
   onQuantityChange: (optionId: OptionId, next: number) => void
 }
 
@@ -36,9 +43,12 @@ export function OptionGroup({
   groupIndex,
   config,
   reserved,
+  groupViolations,
+  ruleViolations,
   onQuantityChange,
 }: OptionGroupProps) {
   const accent = ACCENT[groupIndex % ACCENT.length]
+  const hasGroupIssues = groupViolations.length > 0
 
   return (
     <Card
@@ -46,6 +56,7 @@ export function OptionGroup({
       className={cn(
         'border-l-4 bg-card/90 shadow-md transition-shadow hover:shadow-lg',
         accent,
+        hasGroupIssues && 'ring-1 ring-destructive/25',
       )}
     >
       <CardHeader className="pb-2">
@@ -53,11 +64,18 @@ export function OptionGroup({
         <CardDescription className="text-xs leading-relaxed">
           {formatGroupLimitHint(group)}
         </CardDescription>
+        {hasGroupIssues ? (
+          <GroupViolationAlerts
+            violations={groupViolations}
+            className="mt-2"
+          />
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-1 pt-0">
         {group.options.map((option) => {
           const quantity = config[option.id] ?? 0
           const addableMore = maxAddable(menu, reserved, option.id, config)
+          const rowViolations = optionViolations(option.id, ruleViolations)
 
           return (
             <OptionRow
@@ -65,6 +83,7 @@ export function OptionGroup({
               option={option}
               quantity={quantity}
               addableMore={addableMore}
+              optionViolations={rowViolations}
               onDecrement={() =>
                 onQuantityChange(option.id, Math.max(0, quantity - 1))
               }
