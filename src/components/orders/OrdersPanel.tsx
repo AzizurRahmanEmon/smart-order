@@ -18,6 +18,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { OrdersListSkeleton } from '@/components/skeleton/PageSkeletons'
 
 function OrderBreakdown({
   label,
@@ -95,7 +96,7 @@ export function OrdersPanel() {
         <ScrollArea className="min-h-0 flex-1">
           <div className="px-5 py-4 pr-6">
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading orders…</p>
+              <OrdersListSkeleton />
             ) : !orders?.length ? (
               <p className="text-sm text-muted-foreground">No orders yet.</p>
             ) : (

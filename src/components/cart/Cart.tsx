@@ -10,6 +10,7 @@ import { summarizeConfig } from '@/lib/cartLabels'
 import { useConfigStore } from '@/store/configStore'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CartSkeleton } from '@/components/skeleton/PageSkeletons'
 import {
   Card,
   CardContent,
@@ -44,13 +45,7 @@ export function Cart() {
   const nowMs = serverNow().getTime()
 
   if (isLoading) {
-    return (
-      <Card size="sm" className="shadow-sm">
-        <CardContent className="py-6 text-sm text-muted-foreground">
-          Loading cart…
-        </CardContent>
-      </Card>
-    )
+    return <CartSkeleton />
   }
 
   const lines = cart?.lines ?? []

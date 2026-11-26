@@ -11,6 +11,10 @@ import { OrdersPanel } from '@/components/orders/OrdersPanel'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useMenu } from '@/hooks/useMenu'
+import {
+  AppHeaderTitleSkeleton,
+  MainPageSkeleton,
+} from '@/components/skeleton/PageSkeletons'
 
 function App() {
   const { data: menu, isLoading, isError } = useMenu()
@@ -31,13 +35,16 @@ function App() {
               <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-primary uppercase">
                 Smart Order
               </p>
-              <h1 className="font-heading text-base font-semibold tracking-tight sm:text-lg">
-                {isLoading
-                  ? 'Loading menu…'
-                  : isError
-                    ? 'Smart Order'
-                    : menu?.product.name}
-              </h1>
+              {isLoading ? (
+                <>
+                  <span className="sr-only">Loading product name</span>
+                  <AppHeaderTitleSkeleton />
+                </>
+              ) : (
+                <h1 className="font-heading text-base font-semibold tracking-tight sm:text-lg">
+                  {isError ? 'Smart Order' : menu?.product.name}
+                </h1>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -48,7 +55,7 @@ function App() {
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 lg:py-8">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading menu…</p>
+          <MainPageSkeleton />
         ) : isError || !menu ? (
           <p className="text-sm text-destructive" role="alert">
             Could not load menu. Refresh to try again.

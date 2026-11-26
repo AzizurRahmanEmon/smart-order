@@ -19,6 +19,8 @@ import type { OptionId } from '@/types/menu'
 import { Separator } from '@/components/ui/separator'
 
 import { OptionGroup } from './OptionGroup'
+import { BuilderSkeleton } from '@/components/skeleton/PageSkeletons'
+
 import { ViolationList, type DisplayViolation } from './ViolationList'
 
 function mergeViolations(
@@ -148,9 +150,7 @@ export function Builder() {
   }
 
   if (isLoading || !menu) {
-    return (
-      <p className="text-sm text-muted-foreground">Loading builder…</p>
-    )
+    return <BuilderSkeleton />
   }
 
   return (

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CheckoutSkeleton } from '@/components/skeleton/PageSkeletons'
 
 const PAYMENT_TABS = [
   { value: 'card' as const, label: 'Card', icon: CreditCard },
@@ -74,6 +75,10 @@ export function Checkout() {
         },
       },
     )
+  }
+
+  if (cartLoading) {
+    return <CheckoutSkeleton />
   }
 
   return (

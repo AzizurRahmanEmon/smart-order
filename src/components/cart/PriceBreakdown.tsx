@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { formatBDT } from '@/lib/money'
 import { useConfigStore } from '@/store/configStore'
+import { PriceBreakdownLinesSkeleton } from '@/components/skeleton/PageSkeletons'
 
 export function PriceBreakdown() {
   const { data: menu } = useMenu()
@@ -60,6 +61,12 @@ export function PriceBreakdown() {
     : preview.data?.couponRejection
 
   const showPreviewSource = !hasCart && hasBuilderItems
+  const previewLoading =
+    showPreviewSource &&
+    preview.isFetching &&
+    preview.data === undefined &&
+    !preview.isError
+  const cartPriceLoading = hasCart && !cartPriced
 
   return (
     <Card
@@ -78,7 +85,9 @@ export function PriceBreakdown() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {!priced ? (
+        {previewLoading || cartPriceLoading ? (
+          <PriceBreakdownLinesSkeleton />
+        ) : !priced ? (
           <p className="text-sm text-muted-foreground">
             {showPreviewSource
               ? preview.isError
