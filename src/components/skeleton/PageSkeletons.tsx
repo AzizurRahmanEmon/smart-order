@@ -25,7 +25,7 @@ function SkeletonCard({
 export function AppHeaderTitleSkeleton() {
   return (
     <Skeleton
-      className="mt-0.5 h-5 w-44 sm:h-6 sm:w-56"
+      className="mt-0.5 h-4 w-36 max-w-full sm:h-6 sm:w-56"
       aria-hidden
     />
   )
@@ -52,7 +52,7 @@ export function BuilderSkeleton() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:gap-5">
         {Array.from({ length: 5 }).map((_, i) => (
           <SkeletonCard key={i} className="border-l-4 border-l-transparent">
             <div className="space-y-3 px-3">
@@ -187,7 +187,7 @@ export function CheckoutSkeleton() {
 export function OrderAsideSkeleton() {
   return (
     <aside
-      className="space-y-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100vh-5.5rem)] lg:self-start lg:overflow-y-auto lg:rounded-2xl lg:border lg:border-border/80 lg:bg-card/75 lg:p-4 lg:pr-3 lg:shadow-xl lg:shadow-primary/5 lg:ring-1 lg:ring-foreground/5 lg:backdrop-blur-md"
+      className="space-y-4 rounded-2xl border border-border/80 bg-card/75 p-3 shadow-lg shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur-md sm:p-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100vh-5.5rem)] lg:self-start lg:overflow-y-auto lg:pr-3"
       aria-busy="true"
       aria-label="Loading order summary"
     >
@@ -211,7 +211,7 @@ export function OrderAsideSkeleton() {
 export function MainPageSkeleton() {
   return (
     <div
-      className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:grid-cols-[minmax(0,1fr)_24rem]"
+      className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,20.5rem)] lg:gap-5 xl:grid-cols-[minmax(0,1fr)_21rem]"
       aria-busy="true"
       aria-label="Loading page"
     >

@@ -19,11 +19,12 @@ export function SalesChatLazy() {
         type="button"
         variant="outline"
         size="sm"
-        className="border-primary/25 bg-primary/5 text-foreground shadow-sm hover:bg-primary/10"
+        className="size-8 border-primary/25 bg-primary/5 px-0 text-foreground shadow-sm hover:bg-primary/10 sm:h-7 sm:w-auto sm:gap-1.5 sm:px-2.5"
+        aria-label="Sales chat"
         onClick={() => setArmed(true)}
       >
-        <MessageCircle data-icon="inline-start" className="text-primary" />
-        Sales chat
+        <MessageCircle className="size-4 text-primary" aria-hidden />
+        <span className="hidden sm:inline">Sales chat</span>
       </Button>
     )
   }

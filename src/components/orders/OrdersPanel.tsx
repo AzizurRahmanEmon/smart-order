@@ -78,9 +78,15 @@ export function OrdersPanel() {
   return (
     <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       <SheetTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="size-8 px-0 sm:h-7 sm:w-auto sm:gap-1.5 sm:px-2.5"
+          aria-label="Orders"
+        >
           <Package className="size-4" aria-hidden />
-          Orders
+          <span className="hidden sm:inline">Orders</span>
         </Button>
       </SheetTrigger>
       <SheetContent

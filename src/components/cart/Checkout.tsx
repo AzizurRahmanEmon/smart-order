@@ -92,15 +92,15 @@ export function Checkout() {
           className="gap-0"
         >
           <div className="px-4 pt-4">
-            <TabsList className="h-10 w-full gap-0.5 p-1">
+            <TabsList className="h-10 w-full gap-0.5 p-0.5 sm:p-1">
               {PAYMENT_TABS.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="flex-1 gap-1.5 px-2 text-xs sm:text-sm"
+                  className="flex-1 gap-1 px-1 text-[0.65rem] sm:gap-1.5 sm:px-2 sm:text-sm"
                 >
-                  <tab.icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                  {tab.label}
+                  <tab.icon className="size-3 shrink-0 opacity-80 sm:size-3.5" aria-hidden />
+                  <span className="truncate">{tab.label}</span>
                 </TabsTrigger>
               ))}
             </TabsList>

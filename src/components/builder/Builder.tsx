@@ -9,6 +9,7 @@ import { useAddToCart, useCart, useUpdateCartLine } from '@/hooks/useCart'
 import { useMenu } from '@/hooks/useMenu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { toastCartLineUpdated, toastPlateAddedToCart } from '@/lib/cartToasts'
 import { formatBDT } from '@/lib/money'
 import {
   EXPIRED_RESERVATION_BANNER,
@@ -104,7 +105,7 @@ export function Builder() {
         { lineId: editingLineId, config, qty: 1 },
         {
           onSuccess: () => {
-            toast.success('Cart updated')
+            toastCartLineUpdated()
             resetBuilderConfig()
             setEditingLineId(null)
           },
@@ -130,7 +131,7 @@ export function Builder() {
       { config, qty: 1, idempotencyKey: key },
       {
         onSuccess: () => {
-          toast.success('Added to cart')
+          toastPlateAddedToCart()
           setExpiredEditBanner(false)
           resetBuilderConfig()
         },
@@ -154,21 +155,21 @@ export function Builder() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-5 shadow-lg shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur-sm sm:p-6">
+    <section className="space-y-4 sm:space-y-5 lg:space-y-6">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-4 shadow-lg shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur-sm sm:p-5 md:p-6">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary/15 blur-3xl"
         />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-1.5 sm:space-y-2">
             <div className="flex items-center gap-2">
-              <Coffee className="size-5 text-primary" aria-hidden />
-              <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+              <Coffee className="size-4 shrink-0 text-primary sm:size-5" aria-hidden />
+              <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
                 {isEditing ? 'Edit plate' : 'Build your plate'}
               </h2>
             </div>
-            <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-md text-xs leading-relaxed text-muted-foreground sm:text-sm">
               {isEditing
                 ? 'Update options and save — reservation time stays the same.'
                 : 'Pick options in each section. Rule and stock issues must be cleared before adding to cart.'}
@@ -176,7 +177,7 @@ export function Builder() {
           </div>
           <Badge
             variant="outline"
-            className="border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-semibold text-primary"
+            className="w-fit shrink-0 border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary sm:px-3 sm:py-1.5 sm:text-sm"
           >
             Base {formatBDT(menu.product.basePrice)}
           </Badge>
@@ -208,7 +209,7 @@ export function Builder() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:gap-5">
         {menu.groups.map((group, index) => (
           <OptionGroup
             key={group.id}

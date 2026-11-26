@@ -10,52 +10,162 @@
     />
     <meta name="theme-color" content="#0f766e" />
     <meta name="robots" content="index, follow" />
-    <title>Smart Order Builder — Build Your Breakfast</title>
+    <title>Smart Order Builder</title>
     <style>
-      #app-shell {
-        font-family: system-ui, sans-serif;
+      #app-boot {
+        box-sizing: border-box;
         min-height: 100vh;
         margin: 0;
-        background: #fafaf9;
-        color: #1c1917;
+        font-family: system-ui, sans-serif;
+        background: #faf8f5;
+        color: #3d342c;
       }
-      #app-shell header {
+      #app-boot *,
+      #app-boot *::before,
+      #app-boot *::after {
+        box-sizing: border-box;
+      }
+      #app-boot .bar {
+        border-radius: 0.5rem;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 0, 0, 0.06) 0%,
+          rgba(0, 0, 0, 0.09) 50%,
+          rgba(0, 0, 0, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: app-boot-shimmer 1.2s ease-in-out infinite;
+      }
+      @keyframes app-boot-shimmer {
+        0% {
+          background-position: 100% 0;
+        }
+        100% {
+          background-position: -100% 0;
+        }
+      }
+      #app-boot .top {
         border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 252, 248, 0.85);
         padding: 0.75rem 1rem;
       }
-      #app-shell h1 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        margin: 0.25rem 0 0;
-      }
-      #app-shell p {
-        margin: 0;
-        font-size: 0.65rem;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: #0f766e;
-        font-weight: 600;
-      }
-      #app-shell main {
+      #app-boot .top-inner {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         max-width: 72rem;
         margin: 0 auto;
-        padding: 1.5rem 1rem;
       }
-      #app-shell .hint {
-        font-size: 0.875rem;
-        color: #78716c;
+      #app-boot .logo {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: #c96b2e;
+        flex-shrink: 0;
+      }
+      #app-boot .eyebrow {
+        width: 4.5rem;
+        height: 0.5rem;
+        margin-bottom: 0.35rem;
+      }
+      #app-boot .title {
+        width: 11rem;
+        height: 1.25rem;
+      }
+      #app-boot main {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 2rem;
+      }
+      #app-boot .grid {
+        display: grid;
+        gap: 1.25rem;
+      }
+      @media (min-width: 1024px) {
+        #app-boot .grid {
+          grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 20.5rem);
+        }
+      }
+      #app-boot .panel {
+        border-radius: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 252, 248, 0.9);
+        padding: 1.25rem;
+        min-height: 5rem;
+      }
+      #app-boot .cards {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+        margin-top: 1rem;
+      }
+      @media (min-width: 640px) {
+        #app-boot .cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (min-width: 1280px) {
+        #app-boot .cards {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      #app-boot .card {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 1rem;
+        min-height: 7rem;
+      }
+      #app-boot .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <div id="app-shell">
-        <header>
-          <p>Smart Order</p>
-          <h1>Build Your Breakfast</h1>
+      <div id="app-boot" aria-busy="true">
+        <header class="top">
+          <div class="top-inner">
+            <div class="logo" aria-hidden="true"></div>
+            <div>
+              <p class="sr">Smart Order</p>
+              <div class="bar eyebrow" aria-hidden="true"></div>
+              <div class="bar title" aria-hidden="true"></div>
+            </div>
+          </div>
         </header>
         <main>
-          <p class="hint" role="status">Loading builder…</p>
+          <p class="sr" role="status">Loading menu builder</p>
+          <div class="grid">
+            <div>
+              <div class="panel">
+                <div class="bar" style="width: 55%; height: 1.5rem"></div>
+                <div
+                  class="bar"
+                  style="width: 80%; height: 0.75rem; margin-top: 0.75rem"
+                ></div>
+              </div>
+              <div class="cards" aria-hidden="true">
+                <div class="card bar"></div>
+                <div class="card bar"></div>
+                <div class="card bar"></div>
+                <div class="card bar"></div>
+              </div>
+            </div>
+            <aside class="panel" aria-hidden="true">
+              <div class="bar" style="width: 40%; height: 1rem"></div>
+              <div
+                class="bar"
+                style="width: 100%; height: 6rem; margin-top: 1rem"
+              ></div>
+            </aside>
+          </div>
         </main>
       </div>
     </div>

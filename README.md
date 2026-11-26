@@ -12,8 +12,9 @@ npm run dev
 
 - **Tests:** `npm test`
 - **Build:** `npm run build`
+- **Production preview with mocks:** `npm run build:demo && npm run preview` (plain `build` + `preview` has no MSW unless built with demo env)
 
-MSW is enabled in dev (`src/main.tsx`). The mock server is the source of truth for cart, stock, reservations, and orders.
+MSW is enabled in dev (`src/main.tsx`) and in demo builds (`.env.demo` → `VITE_ENABLE_MSW=true`). The mock server is the source of truth for cart, stock, reservations, and orders.
 
 I used Cursor for implementation with project rules and skills under `.cursor/` (workflow, money/pricing checks, TC tests) alongside `AGENTS.md`.
 
