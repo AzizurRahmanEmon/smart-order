@@ -48,15 +48,21 @@ function toStatsOrders(orders: OrderDto[]): StatsOrder[] {
 type SalesChatSheetProps = {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** Open the sheet on first mount (used after lazy load). */
+  defaultOpen?: boolean
 }
 
-export function SalesChatSheet({ open, onOpenChange }: SalesChatSheetProps) {
-  const [internalOpen, setInternalOpen] = useState(false)
+export function SalesChatSheet({
+  open,
+  onOpenChange,
+  defaultOpen = false,
+}: SalesChatSheetProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen)
   const isControlled = open !== undefined
   const sheetOpen = isControlled ? open : internalOpen
   const setSheetOpen = isControlled ? onOpenChange! : setInternalOpen
 
-  const { data: orders = [] } = useOrders()
+  const { data: orders = [] } = useOrders(sheetOpen)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',

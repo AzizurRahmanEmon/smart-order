@@ -51,7 +51,8 @@ function OrderBreakdown({
 }
 
 export function OrdersPanel() {
-  const { data: orders, isLoading } = useOrders()
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const { data: orders, isLoading } = useOrders(sheetOpen)
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = async () => {
@@ -75,7 +76,7 @@ export function OrdersPanel() {
   }
 
   return (
-    <Sheet>
+    <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
       <SheetTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="gap-1.5">
           <Package className="size-4" aria-hidden />

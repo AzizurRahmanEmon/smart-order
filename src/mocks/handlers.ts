@@ -36,6 +36,11 @@ async function delay(): Promise<void> {
   await new Promise((r) => setTimeout(r, latencyMs()))
 }
 
+/** Brief latency + 15% failure apply only to live price preview (TC-12). */
+async function pricePreviewDelay(): Promise<void> {
+  await delay()
+}
+
 function jsonError(status: number, body: ApiErrorBody) {
   return HttpResponse.json(body, { status })
 }
@@ -47,17 +52,17 @@ function clampQty(qty: unknown): number {
 
 export const handlers = [
   http.get('/api/menu', async () => {
-    await delay()
-    return HttpResponse.json(getMenu())
+    return HttpResponse.json({
+      ...getMenu(),
+      serverTime: getServerTimeIso(),
+    })
   }),
 
   http.get('/api/time', async () => {
-    await delay()
     return HttpResponse.json({ serverTime: getServerTimeIso() })
   }),
 
   http.get('/api/cart', async () => {
-    await delay()
     return HttpResponse.json(buildCartResponse())
   }),
 
@@ -189,7 +194,7 @@ export const handlers = [
   }),
 
   http.post('/api/price', async ({ request }) => {
-    await delay()
+    await pricePreviewDelay()
     if (Math.random() < 0.15) {
       return jsonError(503, {
         code: 'price_unavailable',

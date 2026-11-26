@@ -19,6 +19,8 @@ import { formatBDT } from '@/lib/money'
 import { useConfigStore } from '@/store/configStore'
 import { PriceBreakdownLinesSkeleton } from '@/components/skeleton/PageSkeletons'
 
+import { PayableRow } from './PayableAmount'
+
 export function PriceBreakdown() {
   const { data: menu } = useMenu()
   const { data: cart } = useCart()
@@ -134,12 +136,7 @@ export function PriceBreakdown() {
               <span className="tabular-nums">{formatBDT(priced.vat)}</span>
             </div>
             <Separator className="bg-border/80" />
-            <div className="flex items-end justify-between gap-2 rounded-lg bg-primary/10 px-3 py-2.5">
-              <span className="text-sm font-semibold">Payable</span>
-              <span className="font-heading text-xl font-semibold tracking-tight text-primary tabular-nums">
-                {formatBDT(priced.payable)}
-              </span>
-            </div>
+            <PayableRow payable={priced.payable} dimmed={isStale} />
           </>
         )}
 

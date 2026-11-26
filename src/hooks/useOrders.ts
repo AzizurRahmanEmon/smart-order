@@ -5,10 +5,11 @@ import { fetchOrders, fetchOrdersExport } from '@/api/orders'
 import { handleCartApiError } from '@/lib/cartMutationError'
 import type { CartResponse, PaymentMethod } from '@/types/api'
 
-export function useOrders() {
+export function useOrders(enabled = true) {
   return useQuery({
     queryKey: ['orders'],
     queryFn: ({ signal }) => fetchOrders(signal),
+    enabled,
   })
 }
 

@@ -9,18 +9,28 @@ import App from './App.tsx'
 
 const queryClient = createQueryClient()
 
-async function enableMocking(): Promise<void> {
-  if (!import.meta.env.DEV) return
-  const { worker } = await import('./mocks/browser')
-  await worker.start()
+const mswEnabled =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_MSW === 'true'
+
+;(window as unknown as { __SO_QUERY__?: typeof queryClient }).__SO_QUERY__ =
+  queryClient
+
+if (mswEnabled) {
+  window.addEventListener(
+    'msw:ready',
+    () => {
+      void queryClient.invalidateQueries()
+    },
+    { once: true },
+  )
 }
 
-enableMocking().then(() => {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </StrictMode>,
-  )
-})
+const root = createRoot(document.getElementById('root')!)
+
+root.render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </StrictMode>,
+)

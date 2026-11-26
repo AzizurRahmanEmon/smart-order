@@ -1,26 +1,24 @@
-import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
-import { fetchServerTime } from '@/api/time'
+import { useCart } from '@/hooks/useCart'
+import { useMenu } from '@/hooks/useMenu'
+
+const DEFAULT_AHEAD_MS = 90_000
 
 export function useServerTimeOffset() {
-  const { data } = useQuery({
-    queryKey: ['serverTime'],
-    queryFn: ({ signal }) => fetchServerTime(signal),
-    refetchInterval: 30_000,
-  })
+  const { data: menu } = useMenu()
+  const { data: cart } = useCart()
 
-  const [offsetMs, setOffsetMs] = useState(90_000)
+  const serverTimeIso = cart?.serverTime ?? menu?.serverTime
 
-  useEffect(() => {
-    if (!data?.serverTime) return
-    const serverMs = new Date(data.serverTime).getTime()
-    setOffsetMs(serverMs - Date.now())
-  }, [data?.serverTime])
+  const offsetMs = useMemo(() => {
+    if (!serverTimeIso) return DEFAULT_AHEAD_MS
+    return new Date(serverTimeIso).getTime() - Date.now()
+  }, [serverTimeIso])
 
   function serverNow(): Date {
     return new Date(Date.now() + offsetMs)
   }
 
-  return { serverNow, serverTimeIso: data?.serverTime, offsetMs }
+  return { serverNow, serverTimeIso, offsetMs }
 }

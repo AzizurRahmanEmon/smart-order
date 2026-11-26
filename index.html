@@ -4,10 +4,62 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smart-order</title>
+    <meta
+      name="description"
+      content="Smart Order Builder: configure breakfast plates with live rules, shared ingredient stock, cart reservations, and checkout pricing."
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="robots" content="index, follow" />
+    <title>Smart Order Builder — Build Your Breakfast</title>
+    <style>
+      #app-shell {
+        font-family: system-ui, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        background: #fafaf9;
+        color: #1c1917;
+      }
+      #app-shell header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 0.75rem 1rem;
+      }
+      #app-shell h1 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0.25rem 0 0;
+      }
+      #app-shell p {
+        margin: 0;
+        font-size: 0.65rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #0f766e;
+        font-weight: 600;
+      }
+      #app-shell main {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1.5rem 1rem;
+      }
+      #app-shell .hint {
+        font-size: 0.875rem;
+        color: #78716c;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-shell">
+        <header>
+          <p>Smart Order</p>
+          <h1>Build Your Breakfast</h1>
+        </header>
+        <main>
+          <p class="hint" role="status">Loading builder…</p>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="/src/msw-bootstrap.ts"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

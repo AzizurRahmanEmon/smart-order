@@ -6,7 +6,7 @@ import { BuilderSessionSync } from '@/components/builder/BuilderSessionSync'
 import { Cart } from '@/components/cart/Cart'
 import { Checkout } from '@/components/cart/Checkout'
 import { PriceBreakdown } from '@/components/cart/PriceBreakdown'
-import { SalesChatSheet } from '@/components/chat/SalesChatSheet'
+import { SalesChatLazy } from '@/components/chat/SalesChatLazy'
 import { OrdersPanel } from '@/components/orders/OrdersPanel'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -49,7 +49,7 @@ function App() {
           </div>
           <div className="flex items-center gap-2">
             <OrdersPanel />
-            <SalesChatSheet />
+            <SalesChatLazy />
           </div>
         </div>
       </header>
