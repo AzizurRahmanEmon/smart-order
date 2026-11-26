@@ -13,9 +13,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test -- --run
+      # Parallel vitest workers + undici/msw break on ubuntu (bind in decompress.js).
+      - run: npm test -- --run --no-file-parallelism
       - run: npm run build
